@@ -19,6 +19,8 @@
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 
+typedef std::vector<unsigned int>::size_type DataPointIndex;
+
 int main(int argc, char **argv)
 {
     std::cout << "starting training ... " << std::endl;
@@ -27,7 +29,40 @@ int main(int argc, char **argv)
         std::cout << "exec <text file>" << std::endl;
         exit(-1);
     }
+/*
+    std::cout << "testing partitioning" << std::endl;
 
+    std::vector<float> keys;
+    std::vector<unsigned int> indices;
+    float invalid = 100;
+
+    for(int i=0; i<5; i++){
+        keys.push_back(invalid);
+        indices.push_back(i);
+    }
+
+    keys[3] = invalid;
+
+    for (int i=0; i<5; i++){
+        std::cout << keys[i] << " ";
+    }
+
+    std::pair<DataPointIndex,DataPointIndex> result = Tree<int, int>::Partition(keys, indices, 0, 5 , 1.0/3.0, invalid);
+
+    std::cout << "result: " << result.first << ";" << result.second << std::endl;
+
+    for (int i=0; i<5; i++){
+        std::cout << (float)keys[i] << " ";
+    }
+
+    std::cout << std::endl;
+    std::cout.flush();
+
+    char in;
+
+    std::cin >> in;
+
+    return 0;*/
 
     try{
         DepthDB db(argv[1]);
@@ -99,8 +134,11 @@ int main(int argc, char **argv)
         std::cerr << "Forest saved" << std::endl;
         std::cerr.flush();
 
+
+        std::cout << test.Count()-1 << std::endl;
         //last image at test
         ClassificationDB::fileindex_type last_image = test.getImageIdx(test.Count()-1);
+
         std::cerr << "Last image stored: " << db.imgIdx2Name(last_image) << std::endl;
 
         std::vector<std::vector<int> > leafIndicesPerTree;

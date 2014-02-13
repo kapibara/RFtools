@@ -51,6 +51,7 @@ public:
 
 
     fileindex_type getImageIndex(fileindex_type i) const{
+        std::cout << imageids_.size() << ";" << i << std::endl;
         return imageids_[i];
     }
 
