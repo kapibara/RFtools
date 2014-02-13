@@ -27,7 +27,7 @@ float DepthFeature::GetResponse(const MicrosoftResearch::Cambridge::Sherwood::ID
 
     unsigned short Ix = I.at<unsigned short>(x);
 
-    if (isValid(Ix)){
+    if (isDepthValid(Ix)){
 
         x1 = x + u_*((double)zeroplane_/(double)Ix);
         x2 = x + v_*((double)zeroplane_/(double)Ix);
@@ -39,7 +39,7 @@ float DepthFeature::GetResponse(const MicrosoftResearch::Cambridge::Sherwood::ID
             return NaN();
         }else{
 
-            if (isValid(I.at<unsigned short>(x1)) & isValid(I.at<unsigned short>(x2))){
+            if (isDepthValid(I.at<unsigned short>(x1)) & isDepthValid(I.at<unsigned short>(x2))){
 
                 return I.at<unsigned short>(x1) - I.at<unsigned short>(x2);
 

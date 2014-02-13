@@ -41,12 +41,13 @@ public:
         zeroplane_ = 1;
     }
 
-    bool isValid(unsigned short val) const {
+    bool isDepthValid(unsigned short val) const {
         return val>0;
     }
 
-    float NaN() const{
-        return 1e10;
+    static bool isValid(float featureValue){
+        /*this is ok, since featureValue supposed to be exactly the same*/
+        return (featureValue != NaN());
     }
 
     float GetResponse(const MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection& data, unsigned int dataIndex);
@@ -54,6 +55,10 @@ public:
     bool Serialize(std::ostream &stream) const;
 
 private:
+
+    static float NaN(){
+        return 1e10;
+    }
 
     cv::Point2i u_,v_;
     unsigned short zeroplane_;
