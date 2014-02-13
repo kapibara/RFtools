@@ -85,7 +85,7 @@ bool DepthDB::getDataPoint(unsigned int i, std::string &file, cv::Point2i &coord
 
 void DepthDB::readFiles(const std::string &file)
 {
-    ifstream input(file);
+    ifstream input(file.c_str());
     cv::Mat tmpMat;
     string tmp;
     vector<string> sep;

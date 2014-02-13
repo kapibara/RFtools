@@ -18,6 +18,8 @@ public:
 
     void Aggregate(const ClassStats& i);
 
+    void Aggregate(bintype i);
+
     double Entropy() const;
 
     unsigned char ClassDecision() const;

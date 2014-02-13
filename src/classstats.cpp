@@ -106,8 +106,17 @@ void ClassStats::Aggregate(const MicrosoftResearch::Cambridge::Sherwood::IDataPo
 {
     const ClassificationDB& db = (const ClassificationDB&)(data);
 
-    bins_[db.getNumericalLabel(index)]++;
+    Aggregate(db.getNumericalLabel(index));
 
+}
+
+void ClassStats::Aggregate(bintype i)
+{
+    if(i>=binCount_){
+        throw std::invalid_argument("ClassStats: index i should be less then number of classes");
+    }
+
+    bins_[i]++;
     sampleCount_++;
 }
 
@@ -133,6 +142,7 @@ void ClassStats::Aggregate(const ClassStats& aggregator)
   if(aggregator.binCount_ != binCount_ && binCount_!=0){
       // do nothing
       std::cerr << "binCount_ does not correspond" <<std::endl;
+      std::cerr << "binCount_:" << (int)binCount_ << "aggregator.binCount_:" << (int)aggregator.binCount_ <<std::endl;
   }
 
   if (binCount_==0){

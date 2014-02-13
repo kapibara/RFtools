@@ -6,7 +6,7 @@
 #include <vector>
 #include <iostream>
 
-std::vector<std::string> split(const std::string &str, std::string &symbols)
+std::vector<std::string> split(const std::string &str, const std::string &symbols)
 {
     std::vector<std::string> result;
     size_t old=0,newpos;

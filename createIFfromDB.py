@@ -1,8 +1,6 @@
 import os
 import glob
 import cv2
-from scipy import misc
-
 
 def createIF(inputpath, foutputfile):
     letters = os.listdir(inputpath)
@@ -43,7 +41,7 @@ def createMaskedIF(inputpath, foutputfile):
 
     for l in letters:
 
-        if (l=='m') or (l=='n'):
+#        if (l=='m') or (l=='n'):
 
             files = glob.glob(inputpath + '/' + l + '/imDepthOrig*')
 
@@ -61,7 +59,7 @@ def createMaskedIF(inputpath, foutputfile):
 
                 newname = newname.replace('\\', '/')
 
-                if fc < 1000:
+                if fc < 100000:
 
                     out.write(newname + ',' + l + '\n')
                 else:

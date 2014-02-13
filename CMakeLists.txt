@@ -8,8 +8,13 @@ set(CMAKE_BUILD_TYPE Release)
 
 set(CMAKE_INSTALL_PREFIX ${HOME}/bin)
 
-set(Forest_DIR "C:/Data/Development/CPP/Sherwood/cpp/lib/")
-set(OpenCV_DIR "C:/openCV/custom_build/")
+set(DEV_BASE "/home/kuznetso/Projects/CPP/")
+
+set(Forest_DIR "${DEV_BASE}Sherwood/cpp/lib/")
+
+if(WIN32)
+    set(OpenCV_DIR "${DEV_BASE}custom_build/")
+endif()
 
 find_package(OpenCV REQUIRED)
 

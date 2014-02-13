@@ -5,20 +5,15 @@
 #include "classstats.h"
 
 #include <map>
-
-
-class cvPointicompare {
-    public:
-        bool operator()(const cv::Point2i &x,const cv::Point2i &y) const { return (x.x > y.x) | ((x.x == y.x) & (x.y > y.y)); }
-};
+#include <cmath>
 
 class ImagePixelStats
 {
     typedef std::pair<cv::Point2i,ClassStats> pixel_val;
 
 public:
-    ImagePixelStats(){
-        clCount_=0;
+    ImagePixelStats(unsigned char clCount = 0){
+        clCount_=clCount;
     }
 
     void Clear(){
@@ -27,32 +22,43 @@ public:
     }
 
     void Aggregate(cv::Point2i p, ClassStats stats){
-        /*std::cerr << "ImagePixelStats::Aggregate()" << std::endl;
-        std::cerr << p.x << ";" << p.y <<":" << (int)stats.ClassCount() << std::endl;
-        std::cerr.flush();*/
 
         if(palette_.empty()){
             clCount_ = stats.ClassCount();
+            int color_divs = floor(pow((double)clCount_,1/3.0))+1;
+            int r,g,b;
             for (int i=0; i< clCount_; i++){
-                palette_.push_back(cv::Vec3b((i+1)*256/(clCount_+1),(i+1)*256/(clCount_+1),(i+1)*256/(clCount_+1)));
+                r = ((i)%(color_divs*color_divs))%color_divs+1;
+                g = ((i)%(color_divs*color_divs))/color_divs+1;
+                b = (i)/(color_divs*color_divs)+1;
+                palette_.push_back(cv::Vec3b(r*255/(color_divs),g*255/(color_divs),b*255/(color_divs)));
             }
         }
 
-        pixels_[p].Aggregate(stats);
+        /*this is too much pixels; leads to the overflow
+        pixels_[p].Aggregate(stats);*/
 
-        /*std::cerr << "ImagePixelStats::Aggregate(): done" << std::endl;
-        std::cerr.flush();*/
+        std::pair<pToStatsMap::iterator,bool> result = pixels_.insert(std::make_pair(p,ClassStats(clCount_)));
+        ((result.first)->second).Aggregate(stats.ClassDecision());
+
     }
 
     bool Serialize(const std::string  &filename) const; //save image
-     bool Serialize(std::ostream  &stream) const; //save matrix
+    bool Serialize(std::ostream  &stream) const; //save matrix
 
 private:
 
+    class cvPointicompare {
+        public:
+            bool operator()(const cv::Point2i &x,const cv::Point2i &y) const { return (x.x > y.x) | ((x.x == y.x) & (x.y > y.y)); }
+    };
+
     cv::Vec3b toColor(unsigned short stats) const;
 
+    typedef std::map<cv::Point2i,ClassStats,cvPointicompare> pToStatsMap;
+
     std::vector<cv::Vec3b> palette_;
-    std::map<cv::Point2i,ClassStats,cvPointicompare> pixels_;\
+    pToStatsMap pixels_;\
     unsigned char clCount_;
 };
 

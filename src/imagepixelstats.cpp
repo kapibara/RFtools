@@ -3,7 +3,7 @@
 bool ImagePixelStats::Serialize(std::ostream &stream) const{
     std::vector<unsigned short> result(clCount_);
     std::ostringstream ss;
-    ClassStats stats(2);
+    ClassStats stats(clCount_);
 
     for(int i=0; i< result.size();i++){
         result[i]=0;
@@ -25,9 +25,6 @@ bool ImagePixelStats::Serialize(std::ostream &stream) const{
 }
 
 bool ImagePixelStats::Serialize(const std::string &filename) const{
-
-    std::cerr << "pixels_.size()" << pixels_.size() << std::endl;
-    std::cerr.flush();
 
     if(pixels_.size()==0){
         return false;

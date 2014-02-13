@@ -2,7 +2,10 @@
 #include <iostream>
 #include <fstream>
 #include <ctime>
+
+#ifdef WIN32
 #include <windows.h>
+#endif
 
 #include "depthdb.h"
 #include "trainingcontext.h"
@@ -20,9 +23,14 @@ int main(int argc, char **argv)
 {
     std::cout << "starting training ... " << std::endl;
 
+    if (argc<2){
+        std::cout << "exec <text file>" << std::endl;
+        exit(-1);
+    }
+
 
     try{
-        DepthDB db("C:/Data/Development/Python/output.txt");
+        DepthDB db(argv[1]);
         Random  random;
         std::vector<ClassificationDB::index_type> train_ind;
         std::vector<ClassificationDB::index_type> test_ind;
@@ -58,7 +66,7 @@ int main(int argc, char **argv)
         std::cerr.flush();
 
         Parameter<int> T(1, "No. of trees in the forest.");
-        Parameter<int> D(10, "Maximum tree levels.");
+        Parameter<int> D(5, "Maximum tree levels.");
         Parameter<int> F(100, "No. of candidate feature response functions per split node.");
         Parameter<int> L(10, "No. of candidate thresholds per feature response function.");
         Parameter<bool> verbose(true,"Enables verbose progress indication.");
@@ -79,7 +87,7 @@ int main(int argc, char **argv)
         std::cerr << "start forest training ... " << std::endl;
         std::cerr.flush();
 
-        std::auto_ptr<Forest<DepthFeature, ClassStats>> forest = ForestTrainer<DepthFeature, ClassStats>::TrainForest (
+        std::auto_ptr<Forest<DepthFeature, ClassStats> > forest = ForestTrainer<DepthFeature, ClassStats>::TrainForest (
                 random, trainingParameters, context, train );
 
         std::cerr << "Forest trained: " << forest->GetTree(0).NodeCount() << std::endl;

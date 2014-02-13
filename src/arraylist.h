@@ -2,9 +2,9 @@
 #define ARRAYLIST_H
 
 #include <vector>
-#include <array>
 
 #include <iostream>
+#include <stdexcept>
 
 template<class T>
 class ArrayList
@@ -39,7 +39,7 @@ public:
 
     T& operator[](size_type n){
         if (n >= size_ | n < 0){
-            throw std::exception("index out of bounds");
+            throw std::invalid_argument("index out of bounds");
         }
 
         size_type i1 = n / epb_;
@@ -50,7 +50,7 @@ public:
 
     const T& operator[](size_type n) const{
         if (n >= size_ | n < 0){
-            throw std::exception("index out of bounds");
+            throw std::invalid_argument("index out of bounds");
         }
 
         size_type i1 = n / epb_;
@@ -73,7 +73,7 @@ public:
 
         if (i1 > arrays_.size()){
             std::cerr << "unexpected i1 value" << std::endl;
-            exit(-4);
+            throw std::runtime_error("array is not allocated; runtime error; check the code");
         }
 
         arrays_[i1][i2] = val;
