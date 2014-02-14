@@ -17,58 +17,35 @@
 #include "inmemdb.h"
 #include "imagepixelstats.h"
 
+#include <climits>
+
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 
 typedef std::vector<unsigned int>::size_type DataPointIndex;
 
 int main(int argc, char **argv)
 {
-    std::cout << "starting training ... " << std::endl;
 
-    if (argc<2){
-        std::cout << "exec <text file>" << std::endl;
-        exit(-1);
-    }
-/*
-    std::cout << "testing partitioning" << std::endl;
 
-    std::vector<float> keys;
-    std::vector<unsigned int> indices;
-    float invalid = 100;
+if (argc<2){
+    std::cout << "exec <db file>" << std::endl;
+    exit(-1);
+}
 
-    for(int i=0; i<5; i++){
-        keys.push_back(invalid);
-        indices.push_back(i);
-    }
+try{
+   std::auto_ptr<Forest<DepthFeature, ClassStats> > forest;
 
-    keys[3] = invalid;
+   DepthDB db(argv[1]);
+   ClassificationDB *test;
+   Random  random;
 
-    for (int i=0; i<5; i++){
-        std::cout << keys[i] << " ";
-    }
 
-    std::pair<DataPointIndex,DataPointIndex> result = Tree<int, int>::Partition(keys, indices, 0, 5 , 1.0/3.0, invalid);
 
-    std::cout << "result: " << result.first << ";" << result.second << std::endl;
-
-    for (int i=0; i<5; i++){
-        std::cout << (float)keys[i] << " ";
-    }
-
-    std::cout << std::endl;
-    std::cout.flush();
-
-    char in;
-
-    std::cin >> in;
-
-    return 0;*/
-
-    try{
-        DepthDB db(argv[1]);
-        Random  random;
+   if (argc==2){
+        std::cout << "starting training ... " << std::endl;
         std::vector<ClassificationDB::index_type> train_ind;
         std::vector<ClassificationDB::index_type> test_ind;
+
         ClassificationDB::index_type pi=0;
         ClassificationDB::fileindex_type fi = 0;
 
@@ -92,10 +69,10 @@ int main(int argc, char **argv)
         }
 
         DepthDBSubindex train(db,train_ind);
-        DepthDBSubindex test(db,test_ind);
+        test = new DepthDBSubindex(db,test_ind);
 
         std::cout << "Train samples:" << train.Count() << std::endl;
-        std::cout << "Test samples:" << test.Count() << std::endl;
+        std::cout << "Test samples:" << test->Count() << std::endl;
 
         std::cerr << "db loaded ... " << std::endl;
         std::cerr.flush();
@@ -118,11 +95,10 @@ int main(int argc, char **argv)
         DepthFeatureFactory factory(random);
         TrainingContext<DepthFeature, ClassStats> context(db.classCount(),factory);
 
-
         std::cerr << "start forest training ... " << std::endl;
         std::cerr.flush();
 
-        std::auto_ptr<Forest<DepthFeature, ClassStats> > forest = ForestTrainer<DepthFeature, ClassStats>::TrainForest (
+        forest = ForestTrainer<DepthFeature, ClassStats>::TrainForest (
                 random, trainingParameters, context, train );
 
         std::cerr << "Forest trained: " << forest->GetTree(0).NodeCount() << std::endl;
@@ -134,34 +110,37 @@ int main(int argc, char **argv)
         std::cerr << "Forest saved" << std::endl;
         std::cerr.flush();
 
+    }
+    else if (argc>2){
+        std::cout << "loading the forest ... " << std::endl;
 
-        std::cout << test.Count()-1 << std::endl;
-        //last image at test
-        ClassificationDB::fileindex_type last_image = test.getImageIdx(test.Count()-1);
+        std::ifstream in("testout");
+        forest = Forest<DepthFeature, ClassStats>::Deserialize(in);
 
-        std::cerr << "Last image stored: " << db.imgIdx2Name(last_image) << std::endl;
+        std::cerr << "Forest deserialized" << std::endl;
+        std::cerr.flush();
 
-        std::vector<std::vector<int> > leafIndicesPerTree;
+        test = &db;
+    }
 
-        try{
+    std::vector<std::vector<int> > leafIndicesPerTree;
+    try{
 
-            forest->Apply(test, leafIndicesPerTree);
-        }
-        catch(std::exception &e){
-            std::cerr << "exception caught:" << e.what() << std::endl;
-            std::cerr.flush();
-        }
+        forest->Apply(*test, leafIndicesPerTree);
+    }
+    catch(std::exception &e){
+        std::cerr << "exception caught:" << e.what() << std::endl;
+        std::cerr.flush();
+    }
+/*
+    std::cerr << "Forest applied on the test set" << std::endl;
+    std::cerr.flush();
 
-        std::cout << "Forest applied on the test set" << std::endl;
+    ClassStats clStatsPixel;
+    std::vector<ClassStats> clStatsImage(db.imageCount());
 
-        ClassStats clStatsPixel;
-        std::vector<ClassStats> clStatsImage(db.imageCount());
-        ImagePixelStats stats1;
-        std::ostringstream s;
-        cv::Mat stub;
-        cv::Point2i xy;
 
-        for(int i=0; i<test.Count(); i++)
+        for(int i=0; i<test->Count(); i++)
         {
             //clStats for a pixel
             clStatsPixel.Clear();
@@ -172,35 +151,16 @@ int main(int argc, char **argv)
             }
 
             //add statistics to the corresponding image statistics
-            clStatsImage[test.getImageIdx(i)].Aggregate(clStatsPixel);
+            clStatsImage[test->getImageIdx(i)].Aggregate(clStatsPixel);
 
-            if(test.getImageIdx(i)==last_image){
-                test.getDataPoint(i,stub,xy);
-                stats1.Aggregate(xy,clStatsPixel);
-            }
-
-        }
-
-        clStatsImage[1].SerializeChar(s);
-
-        std::ofstream result10("out5.txt");
-        stats1.Serialize("testimg.png");
-        stats1.Serialize(result10);
-        result10.close();
-        std::ofstream result("out.txt");
-
-        for(int i=0; i< db.imageCount(); i++){
-            clStatsImage[i].SerializeChar(result);
         }
 
         std::cout << "Statistics computed" << std::endl;
 
-        result.close();
-
-        std::cout.flush();
+        std::cout.flush();*/
 
     }catch(std::exception &e){
-        std::cerr << "exception caught" << std::endl;
+        std::cerr << "exception caught 2" << e.what() << std::endl;
         std::cerr.flush();
     }
 }

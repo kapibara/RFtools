@@ -59,7 +59,7 @@ def createMaskedIF(inputpath, foutputfile):
 
                 newname = newname.replace('\\', '/')
 
-                if fc < 100000:
+                if fc < 1000000:
 
                     out.write(newname + ',' + l + '\n')
                 else:

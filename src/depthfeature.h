@@ -29,9 +29,9 @@ class DepthFeature // : public MicrosoftResearch::Cambridge::Sherwood::IFeatureR
    friend class DepthFeatureFactory;
 
 protected:
-    DepthFeature(cv::Point2i u, cv::Point2i v, unsigned short zeroplane):u_(u),v_(v),zeroplane_(zeroplane)
-    {
-    }
+   DepthFeature(cv::Point2i u, cv::Point2i v, unsigned short zeroplane):u_(u),v_(v),zeroplane_(zeroplane)
+   {
+   }
 
 public:
 
@@ -53,6 +53,10 @@ public:
     float GetResponse(const MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection& data, unsigned int dataIndex);
 
     bool Serialize(std::ostream &stream) const;
+    bool Deserialize(std::istream &stream);
+
+    bool SerializeChar(std::ostream &stream) const;
+
 
 private:
 

@@ -9,7 +9,7 @@ ClassStats::ClassStats(unsigned short clCount)
 {
     binCount_ = clCount;
     if (clCount>0)
-        bins_ = new unsigned int[clCount];
+        bins_ = new bintype[clCount];
     else
         bins_ = 0;
 
@@ -22,13 +22,13 @@ ClassStats::ClassStats(const ClassStats &obj)
     binCount_ = obj.binCount_;
 
     if (binCount_>0)
-        bins_  = new unsigned int[binCount_];
+        bins_  = new bintype[binCount_];
     else
         bins_ = 0;
 
     sampleCount_ = obj.sampleCount_;
 
-    memcpy(bins_, obj.bins_, sizeof(unsigned int)*binCount_);
+    memcpy(bins_, obj.bins_, sizeof(bintype)*binCount_);
 }
 
 ClassStats::~ClassStats()
@@ -61,8 +61,28 @@ unsigned char ClassStats::ClassDecision() const
 bool ClassStats::Serialize(std::ostream &stream) const{
 
     stream.write((const char *)(&binCount_),sizeof(binCount_));
+    stream.write((const char *)bins_,sizeof(bintype)*binCount_);
+
+    return true;
+}
+
+bool ClassStats::Deserialize(std::istream &stream){
+
+    unsigned char tmp;
+    stream.read((char *)(&tmp),sizeof(binCount_));
+
+    if(binCount_ != tmp){
+        if(binCount_>0){
+            delete [] bins_;
+        }
+        bins_ = new bintype[tmp];
+        binCount_ = tmp;
+    }
+    stream.read((char *)bins_,sizeof(bintype)*binCount_);
+
+    sampleCount_=0;
     for(int i=0; i<binCount_; i++){
-        stream.write((const char *)(bins_+i),sizeof(bins_[1]));
+        sampleCount_+=bins_[i];
     }
 
     return true;
@@ -86,9 +106,9 @@ ClassStats & ClassStats::operator=(const ClassStats & obj){
         if (bins_!=0){
             delete [] bins_;
         }
-        bins_ = new unsigned int[binCount_];
+        bins_ = new bintype[binCount_];
     }
-    memcpy(bins_, obj.bins_, sizeof(unsigned int)*binCount_);
+    memcpy(bins_, obj.bins_, sizeof(bintype)*binCount_);
 
     sampleCount_ = obj.sampleCount_;
 
@@ -112,12 +132,24 @@ void ClassStats::Aggregate(const MicrosoftResearch::Cambridge::Sherwood::IDataPo
 
 void ClassStats::Aggregate(bintype i)
 {
+#ifdef ENABLE_OVERFLOW_CHECKS
     if(i>=binCount_){
-        throw std::invalid_argument("ClassStats: index i should be less then number of classes");
+        std::cerr << "stats overflow" << std::endl;
+        std::cerr.flush();
+        //throw std::invalid_argument("ClassStats: index i should be less then number of classes");
     }
+#endif
 
     bins_[i]++;
     sampleCount_++;
+
+#ifdef ENABLE_OVERFLOW_CHECKS
+    if(sampleCount_ == 0 ){
+        std::cerr << "stats overflow" << std::endl;
+        std::cerr.flush();
+        //throw std::overflow_error("ClassStats: sampleCount_ overflow");
+    }
+#endif
 }
 
 double ClassStats::Entropy() const
@@ -148,13 +180,22 @@ void ClassStats::Aggregate(const ClassStats& aggregator)
   if (binCount_==0){
         binCount_ = aggregator.binCount_;
         sampleCount_ = aggregator.sampleCount_;
-        bins_ = new unsigned int[binCount_];
-        memcpy(bins_, aggregator.bins_, sizeof(unsigned int)*binCount_);
+        bins_ = new bintype[binCount_];
+        memcpy(bins_, aggregator.bins_, sizeof(bintype)*binCount_);
         return;
   }
 
-  for (int b = 0; b < binCount_; b++)
+  for (int b = 0; b < binCount_; b++){
     bins_[b] += aggregator.bins_[b];
+  }
+
+#ifdef ENABLE_OVERFLOW_CHECKS
+    if ((sampleCount_+aggregator.sampleCount_)<sampleCount_){
+        std::cerr << "stats overflow" << std::endl;
+        std::cerr.flush();
+        //throw std::overflow_error("ClassStats: sampleCount_ overflow");
+    }
+#endif
 
   sampleCount_ += aggregator.sampleCount_;
 }

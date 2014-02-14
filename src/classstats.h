@@ -4,12 +4,14 @@
 #include "Interfaces.h"
 #include <ostream>
 
+#define ENABLE_OVERFLOW_CHECKS
+
 class ClassStats
 {
     typedef unsigned int bintype;
 public:
     ClassStats(unsigned short clCount = 0);
-    ClassStats(const ClassStats &obj);
+    ClassStats(const ClassStats &obj); /*this deep copying might be not needed according to the framework*/
     ~ClassStats();
 
     void Clear();
@@ -24,7 +26,7 @@ public:
 
     unsigned char ClassDecision() const;
 
-    ClassStats & operator=(const ClassStats & obj);
+    ClassStats & operator=(const ClassStats & obj); /*this deep copying might be not needed according to the framework*/
 
     bintype SampleCount(){
         return sampleCount_;
@@ -37,6 +39,7 @@ public:
     virtual ClassStats DeepClone() const;
 
     bool Serialize(std::ostream &stream) const;
+    bool Deserialize(std::istream &stream);
 
     bool SerializeChar(std::ostream &stream) const;
 

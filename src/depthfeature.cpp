@@ -65,3 +65,25 @@ bool DepthFeature::Serialize(std::ostream &stream) const
 
     return true;
 }
+
+bool DepthFeature::SerializeChar(std::ostream &stream) const
+{
+    std::ostringstream ss;
+
+    ss << "u(" << u_.x << ";" << u_.y << ")v("<< v_.x << ";"<< v_.y << ")zp" << zeroplane_ << std::endl;
+
+    stream << ss.str() << std::endl;
+
+    return true;
+}
+
+bool DepthFeature::Deserialize(std::istream &stream)
+{
+    stream.read((char*)(&(u_.x)),sizeof(u_.x));
+    stream.read((char*)(&(u_.y)),sizeof(u_.y));
+    stream.read((char*)(&(v_.x)),sizeof(v_.x));
+    stream.read((char*)(&(v_.y)),sizeof(v_.y));
+    stream.read((char*)(&(zeroplane_)),sizeof(zeroplane_));
+
+    return true;
+}

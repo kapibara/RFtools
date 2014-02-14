@@ -65,7 +65,7 @@ public:
 
 private:
     ClassificationDB &source_;
-    const std::vector<ClassificationDB::index_type> &subindex_;
+    const std::vector<ClassificationDB::index_type> subindex_;
     std::vector<ClassificationDB::fileindex_type> imageids_;
 
 };
