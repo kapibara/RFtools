@@ -1,25 +1,25 @@
 #include "depthfeature.h"
 
-#include "depthdb.h"
+#include "depthimagedb.h"
 
 #include <cmath>
 
-DepthFeatureFactory::DepthFeatureFactory(MicrosoftResearch::Cambridge::Sherwood::Random &random):random_(random)
+DepthFeatureFactory::DepthFeatureFactory()
 {
     uvlimit_ = 10;
     zeroplane_ = 200;
 }
 
-DepthFeature DepthFeatureFactory::getDepthFeature(){
-    cv::Point2i u = cv::Point2i(floor((random_.NextDouble()*2*uvlimit_-uvlimit_)),floor((random_.NextDouble()*2*uvlimit_-uvlimit_)));
-    cv::Point2i v = cv::Point2i(floor((random_.NextDouble()*2*uvlimit_-uvlimit_)),floor((random_.NextDouble()*2*uvlimit_-uvlimit_)));
+DepthFeature DepthFeatureFactory::getDepthFeature(MicrosoftResearch::Cambridge::Sherwood::Random &random){
+    cv::Point2i u = cv::Point2i(floor((random.NextDouble()*2*uvlimit_-uvlimit_)),floor((random.NextDouble()*2*uvlimit_-uvlimit_)));
+    cv::Point2i v = cv::Point2i(floor((random.NextDouble()*2*uvlimit_-uvlimit_)),floor((random.NextDouble()*2*uvlimit_-uvlimit_)));
 
     return DepthFeature(u,v,zeroplane_);
 }
 
 float DepthFeature::GetResponse(const MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection &data, unsigned int dataIndex)
 {
-    ClassificationDB &db = (ClassificationDB &)data;
+    DepthImageDB &db = (DepthImageDB &)data;
     cv::Mat I;
     cv::Point2i x,x1,x2;
 

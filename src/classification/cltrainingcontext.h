@@ -8,17 +8,17 @@
 #include <iostream>
 
 template <class F, class S>
-class TrainingContext : public MicrosoftResearch::Cambridge::Sherwood::ITrainingContext<F,S>
+class ClTrainingContext : public MicrosoftResearch::Cambridge::Sherwood::ITrainingContext<F,S>
 {
 public:
-    TrainingContext(unsigned short nClasses,DepthFeatureFactory &factory):factory_(factory)
+    ClTrainingContext(unsigned short nClasses,DepthFeatureFactory &factory):factory_(factory)
     {
         nClasses_ = nClasses;
     }
 
     virtual F GetRandomFeature(MicrosoftResearch::Cambridge::Sherwood::Random& random)
     {
-        return factory_.getDepthFeature();
+        return factory_.getDepthFeature(random);
     }
 
     virtual S GetStatisticsAggregator()

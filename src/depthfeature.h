@@ -9,11 +9,12 @@
 
 class DepthFeature;
 
+
 class DepthFeatureFactory{
 public:
-    DepthFeatureFactory(MicrosoftResearch::Cambridge::Sherwood::Random &random);
+    DepthFeatureFactory();
 
-    DepthFeature getDepthFeature();
+    DepthFeature getDepthFeature(MicrosoftResearch::Cambridge::Sherwood::Random &random);
 
     void setUVLimit(int UVLimit) {uvlimit_ = UVLimit;}
     void setZeroPlane(unsigned short zeroPlane) {zeroplane_ = zeroPlane;}
@@ -21,10 +22,11 @@ public:
 private:
     int uvlimit_;
     unsigned short zeroplane_;
-    MicrosoftResearch::Cambridge::Sherwood::Random &random_;
 };
 
-class DepthFeature // : public MicrosoftResearch::Cambridge::Sherwood::IFeatureResponse
+/*standard depth feature*/
+
+class DepthFeature
 {
    friend class DepthFeatureFactory;
 

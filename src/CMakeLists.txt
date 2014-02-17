@@ -1,27 +1,38 @@
-set(EXEC DepthRF)
+set(EXECCL DepthRFCL)
+set(EXECH DepthRFHOUGH)
 
-set(HEADERS depthdb.h /
-            depthfeature.h /
-            classstats.h /
-            trainingcontext.h /
+set(CL_FOLDER classification)
+set(H_FOLDER hough)
+
+set(CL_HEADERS ${CL_FOLDER}/depthdb.h /
+            ${CL_FOLDER}/classstats.h /
+            ${CL_FOLDER}/cltrainingcontext.h /
+            ${CL_FOLDER}/inmemdb.h /
+            ${CL_FOLDER}/imagepixelstats.h)
+
+set(HOUGH_HEADERS ${H_FOLDER}/houghtrainingcontext.h /
+                  ${H_FOLDER}/votesstats.h /
+                  ${H_FOLDER}/depthdbwithvotes.h)
+
+set(GENERAL_HEADERS depthfeature.h /
             parameter.h /
             arraylist.h /
-            inmemdb.h /
-            imagepixelstats.h)
+            depthimagedb.h)
 
-set(SOURCES main.cpp /
-            split.hpp)
+set(CL_SOURCE ${CL_FOLDER}/depthdb.cpp /
+            ${CL_FOLDER}/classstats.cpp /
+            ${CL_FOLDER}/inmemdb.cpp /
+            ${CL_FOLDER}/cltrainingcontext.cpp /
+            ${CL_FOLDER}/imagepixelstats.cpp)
 
-set(S2 test.cpp)
+set(HOUGH_SOURCE ${H_FOLDER}/houghtrainingcontext.cpp /
+                 ${H_FOLDER}/votesstats.cpp /
+                 ${H_FOLDER}/depthdbwithvotes.cpp)
 
-set(MODULES depthdb.cpp /
-            depthfeature.cpp /
-            classstats.cpp /
-            trainingcontext.cpp /
-            parameter.cpp /
-            arraylist.cpp /
-            inmemdb.cpp /
-            imagepixelstats.cpp)
+set(GENERAL_SOURCE depthfeature.cpp /
+                    parameter.cpp /
+                    arraylist.cpp/
+                    split.hpp)
 
 set(FOREST ../../Sherwood/cpp/lib/Forest.h /
            ../../Sherwood/cpp/lib/ForestTrainer.h /
@@ -36,10 +47,13 @@ set(FOREST ../../Sherwood/cpp/lib/Forest.h /
 
 
 
-add_executable(${EXEC} ${SOURCES} ${MODULES} ${HEADERS} ${FOREST})
+add_executable(${EXECCL} main_cl.cpp ${CL_SOURCE} ${CL_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
+add_executable(${EXECH} main_h.cpp ${HOUGH_SOURCE} ${HOUGH_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
 #add_executable(test ${S2})
 
-target_link_libraries(${EXEC} ${OpenCV_LIBS})
+target_link_libraries(${EXECCL} ${OpenCV_LIBS})
+target_link_libraries(${EXECH} ${OpenCV_LIBS})
 
-install(TARGETS ${EXEC} DESTINATION .)
+install(TARGETS ${EXECCL} DESTINATION .)
+install(TARGETS ${EXECH} DESTINATION .)
 #install(TARGETS test DESTINATION .)

@@ -8,7 +8,11 @@ set(CMAKE_BUILD_TYPE Debug)
 
 set(CMAKE_INSTALL_PREFIX ${HOME}/bin)
 
-set(DEV_BASE "/home/kuznetso/Projects/CPP/")
+if(WIN32)
+    set(DEV_BASE "C:/Data/Development/CPP/")
+else()
+    set(DEV_BASE "/home/kuznetso/Projects/CPP/")
+endif()
 
 set(Forest_DIR "${DEV_BASE}Sherwood/cpp/lib/")
 
@@ -18,15 +22,15 @@ endif()
 
 find_package(OpenCV REQUIRED)
 
-include_directories(${HOME}/include)
+include_directories(${HOME}/src)
+#include_directories(${HOME}/include)
 include_directories(${Forest_DIR})
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-link_directories(${OPENNI_LIBS})
-
+link_directories(${OpenCV_LIB_DIR})
 
 #get_cmake_property(_variableNames VARIABLES)
-#foreach (_variableName ${_variableNames})
+#foreach(_variableName ${_variableNames})
 #    message(STATUS "${_variableName}=${${_variableName}}")
 #endforeach()
 

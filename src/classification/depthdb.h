@@ -3,7 +3,7 @@
 
 #include "Interfaces.h"
 #include "arraylist.h"
-#include "depthfeature.h"
+#include "depthimagedb.h"
 
 #include <iostream>
 #include <string>
@@ -12,15 +12,13 @@
 
 #include "opencv2/opencv.hpp"
 
-class ClassificationDB: public MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection
+class ClassificationDB: public DepthImageDB
 {
 public:
     typedef unsigned short label_type;
-    typedef unsigned int index_type;
     typedef unsigned short fileindex_type;
 
     virtual label_type getNumericalLabel(index_type i) const = 0;
-    virtual bool getDataPoint(index_type i, cv::Mat &img, cv::Point2i &coordinate) = 0;
     virtual fileindex_type getImageIdx(index_type i) const = 0;
 };
 

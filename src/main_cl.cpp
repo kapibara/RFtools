@@ -7,15 +7,14 @@
 #include <windows.h>
 #endif
 
-#include "depthdb.h"
-#include "trainingcontext.h"
+#include "classification/depthdb.h"
+#include "classification/cltrainingcontext.h"
 
 #include "TrainingParameters.h"
 #include "Forest.h"
 #include "ForestTrainer.h"
 #include "parameter.h"
-#include "inmemdb.h"
-#include "imagepixelstats.h"
+#include "classification/imagepixelstats.h"
 
 #include <climits>
 
@@ -92,8 +91,8 @@ try{
 
         std::cerr <<"class count: "  << db.classCount() << " element count: " << db.Count()<<std::endl;
 
-        DepthFeatureFactory factory(random);
-        TrainingContext<DepthFeature, ClassStats> context(db.classCount(),factory);
+        DepthFeatureFactory factory;
+        ClTrainingContext<DepthFeature, ClassStats> context(db.classCount(),factory);
 
         std::cerr << "start forest training ... " << std::endl;
         std::cerr.flush();
@@ -132,7 +131,7 @@ try{
         std::cerr << "exception caught:" << e.what() << std::endl;
         std::cerr.flush();
     }
-/*
+
     std::cerr << "Forest applied on the test set" << std::endl;
     std::cerr.flush();
 
@@ -157,7 +156,7 @@ try{
 
         std::cout << "Statistics computed" << std::endl;
 
-        std::cout.flush();*/
+        std::cout.flush();
 
     }catch(std::exception &e){
         std::cerr << "exception caught 2" << e.what() << std::endl;
