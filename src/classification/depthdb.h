@@ -22,6 +22,23 @@ public:
     virtual fileindex_type getImageIdx(index_type i) const = 0;
 };
 
+
+class LabelPerImageStringParser: public GeneralStringParser
+{
+public:
+    void setString(const std::string &str);
+    std::string getFilename(){
+        return strsplit_[0];
+    }
+
+    std::string getLabel(){
+        return strsplit_[1];
+    }
+
+private:
+    std::vector<std::string> strsplit_;
+};
+
 class DepthDBSubindex : public ClassificationDB
 {
 public:

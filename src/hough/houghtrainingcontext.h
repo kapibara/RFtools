@@ -4,14 +4,15 @@
 #include "Interfaces.h"
 
 #include "depthfeature.h"
+#include "hough/votesstats.h"
 
-template <class F, class S>
-class HoughTrainingContext: public MicrosoftResearch::Cambridge::Sherwood::ITrainingContext<F,S>
+template <class F>
+class HoughTrainingContext: public MicrosoftResearch::Cambridge::Sherwood::ITrainingContext<F,VotesStats>
 {
 public:
-    HoughTrainingContext(DepthFeatureFactory &factory):factory_(factory)
+    HoughTrainingContext(unsigned char nClasses_,DepthFeatureFactory &factory):factory_(factory)
     {
-        nClasses_ = nClasses;
+        nClasses_ = VoteState.;
     }
 
     virtual F GetRandomFeature(MicrosoftResearch::Cambridge::Sherwood::Random& random)
@@ -19,24 +20,32 @@ public:
         return factory_.getDepthFeature(random);
     }
 
-    virtual S GetStatisticsAggregator()
+    virtual VotesStats GetStatisticsAggregator()
     {
-        return 0;
+        return VotesStats(nClasses_);
     }
 
-
-    virtual double ComputeInformationGain(const S& parent, const S& leftChild, const S& rightChild)
+    virtual double ComputeInformationGain(const VotesStats& parent, const VotesStats& leftChild, const VotesStats& rightChild)
     {
-// to implement
+        double lvv = leftChild.VoteVariance();
+        double rvv = rightChild.VoteVariance();
+
+        if(parent.Size()<=1){
+            return 0;
+        }
+        /*computing parent.VoteVariance() is not optimal*/
+
+        return (parent.VoteVariance() - (((double)leftChild.Size())/parent.Size()*lvv +((double)rightChild.Size())/parent.Size()*rvv));
     }
 
-    virtual bool ShouldTerminate(const S& parent, const S& leftChild, const S& rightChild, double gain)
+    virtual bool ShouldTerminate(const VotesStats& parent, const VotesStats& leftChild, const VotesStats& rightChild, double gain)
     {
         return gain < 0.01;
     }
 
 private:
     DepthFeatureFactory &factory_;
+    unsigned char nClasses_;
 };
 
 #endif // HOUGHTRAININGCONTEXT_H

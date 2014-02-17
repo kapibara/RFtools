@@ -1,14 +1,18 @@
 #include "depthdb.h"
 
-#include "split.hpp"
-
 #include <fstream>
 #include <iostream>
 #include <map>
 
-
+#include "split.h"
 
 using namespace std;
+
+void LabelPerImageStringParser::setString(const std::string &str){
+    strsplit_.clear();
+    split(str,",",strsplit_);
+}
+
 
 DepthDB::DepthDB(const std::string &file, const std::string &basepath, unsigned int maxCacheSize):
     CACHESIZE(maxCacheSize)
@@ -96,7 +100,8 @@ void DepthDB::readFiles(const std::string &file)
 
             input >> tmp;
 
-            sep = split(tmp,std::string(","));
+            sep.clear();
+            split(tmp,std::string(","),sep);
 
             assert(sep.size() == 2);
 

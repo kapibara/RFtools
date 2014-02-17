@@ -17,7 +17,8 @@ set(HOUGH_HEADERS ${H_FOLDER}/houghtrainingcontext.h /
 set(GENERAL_HEADERS depthfeature.h /
             parameter.h /
             arraylist.h /
-            depthimagedb.h)
+            depthimagedb.h/
+            split.h)
 
 set(CL_SOURCE ${CL_FOLDER}/depthdb.cpp /
             ${CL_FOLDER}/classstats.cpp /
@@ -32,7 +33,8 @@ set(HOUGH_SOURCE ${H_FOLDER}/houghtrainingcontext.cpp /
 set(GENERAL_SOURCE depthfeature.cpp /
                     parameter.cpp /
                     arraylist.cpp/
-                    split.hpp)
+                    split.cpp /
+                    depthimagedb.cpp)
 
 set(FOREST ../../Sherwood/cpp/lib/Forest.h /
            ../../Sherwood/cpp/lib/ForestTrainer.h /
