@@ -1,8 +1,8 @@
 #include "votesstats.h"
 
-void VotesStats::Aggregate(const MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection& data, unsigned int index)
+void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection& data, unsigned int index)
 {
-    DepthDBWithVotes &db = (DepthDBWithVotes &)data;
+    DepthDBWithVotes &db = dynamic_cast<DepthDBWithVotes &>(data);
     std::vector<cv::Point2i> vote;
 
     db.getDataPointVote(index,vote);

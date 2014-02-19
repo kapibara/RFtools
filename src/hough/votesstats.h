@@ -29,7 +29,7 @@ public:
        }
     }
 
-    void Aggregate(const MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection& data, unsigned int index);
+    void Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection& data, unsigned int index);
 
     void Aggregate(const VotesStats& i);
 

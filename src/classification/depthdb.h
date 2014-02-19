@@ -12,17 +12,6 @@
 
 #include "opencv2/opencv.hpp"
 
-class ClassificationDB: public DepthImageDB
-{
-public:
-    typedef unsigned short label_type;
-    typedef unsigned short fileindex_type;
-
-    virtual label_type getNumericalLabel(index_type i) const = 0;
-    virtual fileindex_type getImageIdx(index_type i) const = 0;
-};
-
-
 class LabelPerImageStringParser: public GeneralStringParser
 {
 public:
@@ -32,6 +21,7 @@ public:
     }
 
     std::string getLabel(){
+        std::cout << strsplit_.size() << std::endl;
         return strsplit_[1];
     }
 
@@ -39,72 +29,26 @@ private:
     std::vector<std::string> strsplit_;
 };
 
-class DepthDBSubindex : public ClassificationDB
+class ClassificationDB
 {
 public:
-    DepthDBSubindex(ClassificationDB &source, const std::vector<ClassificationDB::index_type> &subindex):source_(source),subindex_(subindex)
-    {
-        std::set<ClassificationDB::index_type> tmp;
-        for(int i=0; i<subindex_.size(); i++){
-            tmp.insert(getImageIdx(i));
-        }
+    typedef unsigned short label_type;
 
-        imageids_.insert(imageids_.begin(),tmp.begin(),tmp.end());
-    }
-
-    unsigned int Count() const{
-        return subindex_.size();
-    }
-
-    label_type getNumericalLabel(index_type i) const{
-        return source_.getNumericalLabel(subindex_[i]);
-    }
-
-    fileindex_type imageCount() const{
-        return imageids_.size();
-    }
-
-
-    fileindex_type getImageIndex(fileindex_type i) const{
-        std::cout << imageids_.size() << ";" << i << std::endl;
-        return imageids_[i];
-    }
-
-    bool getDataPoint(index_type i, cv::Mat &img, cv::Point2i &coordinate){
-        return source_.getDataPoint(subindex_[i],img,coordinate);
-    }
-
-    fileindex_type getImageIdx(index_type i) const {
-        return source_.getImageIdx(subindex_[i]);
-    }
-
-private:
-    ClassificationDB &source_;
-    const std::vector<ClassificationDB::index_type> subindex_;
-    std::vector<ClassificationDB::fileindex_type> imageids_;
-
+    virtual label_type getNumericalLabel(DepthFileBasedImageDB::index_type i) const = 0;
+    virtual label_type classCount() const = 0;
 };
 
-class DepthDB  : public ClassificationDB
+class DepthDBClassImage: public DepthFileBasedImageDBImpl ,public ClassificationDB
 {
 
 public:
     /*basepath --- database path; for portability
       file --- file containing all db files (1 file per line, relative to basepath*/
-    DepthDB(const std::string &file, const std::string &basepath="", unsigned int maxCacheSize = 1);
+    DepthDBClassImage(const std::string &basepath="");
 
-    bool getDataPoint(index_type i, cv::Mat &img, cv::Point2i &coordinate);
-    bool getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate);
+    bool loadDB(const std::string &filename);
 
-    fileindex_type getImageIdx(index_type i) const{
-        return pointsIndex_[i].first;
-    }
-
-    std::string imgIdx2Name(fileindex_type img_idx){
-        return files_[img_idx];
-    }
-
-    std::string labelIdx2Name(label_type label_idx){
+    std::string labelIndex2Name(label_type label_idx){
         for(std::map<std::string,label_type>::iterator itor = labels_.begin();
             itor!=labels_.end();itor++){
             if(itor->second == label_idx){
@@ -120,54 +64,80 @@ public:
 
     label_type getNumericalLabel(index_type i) const
     {
-        return datalabels_[pointsIndex_[i].first];
+        return datalabels_[getImageIdx(i)];
     }
 
     unsigned short classCount() const
     {
-        return classCount_;
+        return labels_.size();
     }
 
-    unsigned short imageCount() const
-    {
-        return files_.size();
-    }
-
-    unsigned int Count() const{
-        return pointsIndex_.size();
-    }
+protected:
+    virtual bool postprocessFile(const cv::Mat &image,GeneralStringParser &parser);
 
 private:
-
-    void readFiles(const std::string &file);
-    void push_pixels(const cv::Mat &mat);
-
-    std::string path_;
-
-
-    std::vector<int> isInCache_;
-
-    // numerical class label for each file (NOT pixel)
-    // has the same length as files_ and the same indexing
-    std::vector<std::string> files_;
     std::vector<label_type> datalabels_;
 
     //maps numerical data label values to the string values
     std::map<std::string,label_type> labels_;
     typedef std::pair<std::string,label_type > labelmap_type;
+};
 
-    std::vector<cv::Mat> cache_;
+class DepthDBSubindex : public DepthFileBasedImageDB, public ClassificationDB
+{
+public:
+    DepthDBSubindex(DepthDBClassImage &source, const std::vector<index_type> &subindex):
+        source_(source),subindex_(subindex)
+    {
+        std::set<index_type> tmp;
+        for(int i=0; i<subindex_.size(); i++){
+            tmp.insert(getImageIdx(i));
+        }
 
-    typedef std::pair<fileindex_type,unsigned short> filebased_type; // index -> (filename,i)
-    ArrayList<filebased_type> pointsIndex_;
+        imageids_.insert(imageids_.begin(),tmp.begin(),tmp.end());
+    }
 
-    int lastAccesed_;
-    int previous_;
+    unsigned int Count() const{
+        return subindex_.size();
+    }
 
-    unsigned short classCount_;
-    unsigned short elementCount_;
+    bool getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate){
+        return source_.getDataPoint(i,file,coordinate);
+    }
 
-    const unsigned short CACHESIZE;
+    bool getDataPoint(index_type i, cv::Mat &mat, cv::Point2i &coordinate){
+        return source_.getDataPoint(i,mat,coordinate);
+    }
+
+    label_type getNumericalLabel(index_type i) const{
+        return dynamic_cast<ClassificationDB &>(source_).getNumericalLabel(subindex_[i]);
+    }
+
+    label_type classCount() const{
+        return dynamic_cast<ClassificationDB &>(source_).classCount();
+    }
+
+    std::string imageIdx2Filename(fileindex_type i) const{
+       return source_.imageIdx2Filename(i);
+    }
+
+    fileindex_type imageCount() const{
+        return imageids_.size();
+    }
+
+    fileindex_type getBaseImageIdx(fileindex_type i) const{
+        return imageids_[i];
+    }
+
+    fileindex_type getImageIdx(index_type i) const {
+        return source_.getImageIdx(subindex_[i]);
+    }
+
+private:
+    DepthDBClassImage &source_;
+    const std::vector<index_type> subindex_;
+    std::vector<fileindex_type> imageids_;
+
 };
 
 #endif // DEPTHDB_H

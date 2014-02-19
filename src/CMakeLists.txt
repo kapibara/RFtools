@@ -14,7 +14,8 @@ set(HOUGH_HEADERS ${H_FOLDER}/houghtrainingcontext.h /
                   ${H_FOLDER}/votesstats.h /
                   ${H_FOLDER}/depthdbwithvotes.h)
 
-set(GENERAL_HEADERS depthfeature.h /
+set(GENERAL_HEADERS /
+            depthfeature.h /
             parameter.h /
             arraylist.h /
             depthimagedb.h/
@@ -30,11 +31,12 @@ set(HOUGH_SOURCE ${H_FOLDER}/houghtrainingcontext.cpp /
                  ${H_FOLDER}/votesstats.cpp /
                  ${H_FOLDER}/depthdbwithvotes.cpp)
 
-set(GENERAL_SOURCE depthfeature.cpp /
+set(GENERAL_SOURCE  /
+                    depthfeature.cpp /
                     parameter.cpp /
                     arraylist.cpp/
-                    split.cpp /
-                    depthimagedb.cpp)
+                    depthimagedb.cpp /
+                    split.cpp)
 
 set(FOREST ../../Sherwood/cpp/lib/Forest.h /
            ../../Sherwood/cpp/lib/ForestTrainer.h /
@@ -50,8 +52,10 @@ set(FOREST ../../Sherwood/cpp/lib/Forest.h /
 
 
 add_executable(${EXECCL} main_cl.cpp ${CL_SOURCE} ${CL_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
+#add_executable(${EXECCL} main_cl.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE})
 add_executable(${EXECH} main_h.cpp ${HOUGH_SOURCE} ${HOUGH_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
 #add_executable(test ${S2})
+#add_executable(${EXECH} main_h.cpp)
 
 target_link_libraries(${EXECCL} ${OpenCV_LIBS})
 target_link_libraries(${EXECH} ${OpenCV_LIBS})

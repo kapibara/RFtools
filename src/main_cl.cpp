@@ -14,41 +14,39 @@
 #include "Forest.h"
 #include "ForestTrainer.h"
 #include "parameter.h"
+//#include "depthfeature.h"
+#include "classification/classstats.h"
 #include "classification/imagepixelstats.h"
 
 #include <climits>
-
 using namespace MicrosoftResearch::Cambridge::Sherwood;
-
-typedef std::vector<unsigned int>::size_type DataPointIndex;
 
 int main(int argc, char **argv)
 {
-
-
 if (argc<2){
     std::cout << "exec <db file>" << std::endl;
-    exit(-1);
 }
 
 try{
    std::auto_ptr<Forest<DepthFeature, ClassStats> > forest;
 
-   DepthDB db(argv[1]);
-   ClassificationDB *test;
+   DepthDBClassImage db;
+   DepthFileBasedImageDB *test;
    Random  random;
 
+   db.loadDB(argv[1]);
 
+   std::cout << "DB: "<< db.classCount() << std::endl;
 
    if (argc==2){
         std::cout << "starting training ... " << std::endl;
-        std::vector<ClassificationDB::index_type> train_ind;
-        std::vector<ClassificationDB::index_type> test_ind;
+        std::vector<DepthImageDB::index_type> train_ind;
+        std::vector<DepthImageDB::index_type> test_ind;
 
-        ClassificationDB::index_type pi=0;
-        ClassificationDB::fileindex_type fi = 0;
+        DepthImageDB::index_type pi=0;
+        DepthFileBasedImageDB::fileindex_type fi = 0;
 
-        for(int i=0; i<db.imageCount();i++){
+        for(int i=0; i<db.imageCount(); i++){
             if(random.NextDouble()<0.5){
                 fi = db.getImageIdx(pi);
                 while(db.getImageIdx(pi) == fi) //optimal eval expected
@@ -159,7 +157,7 @@ try{
         std::cout.flush();
 
     }catch(std::exception &e){
-        std::cerr << "exception caught 2" << e.what() << std::endl;
+        std::cerr << "exception caught 2: " << e.what() << std::endl;
         std::cerr.flush();
     }
 }

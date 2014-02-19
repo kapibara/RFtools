@@ -17,9 +17,9 @@ DepthFeature DepthFeatureFactory::getDepthFeature(MicrosoftResearch::Cambridge::
     return DepthFeature(u,v,zeroplane_);
 }
 
-float DepthFeature::GetResponse(const MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection &data, unsigned int dataIndex)
+float DepthFeature::GetResponse(MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection &data, unsigned int dataIndex)
 {
-    DepthImageDB &db = (DepthImageDB &)data;
+    DepthImageDB &db = dynamic_cast<DepthImageDB &>(data);
     cv::Mat I;
     cv::Point2i x,x1,x2;
 

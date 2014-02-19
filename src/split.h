@@ -7,5 +7,4 @@
 
 void split(const std::string &str, const std::string &symbols, std::vector<std::string> &result);
 
-
 #endif

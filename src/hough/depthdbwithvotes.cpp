@@ -1,17 +1,22 @@
 #include "depthdbwithvotes.h"
 
-DepthDBWithVotesImpl::DepthDBWithVotesImpl(const std::string &file, const std::string &basepath):
-    DepthFileBasedImageDB(file,StringParserWithOffsert(),basepath,true)
+DepthDBWithVotesImpl::DepthDBWithVotesImpl(const std::string &basepath):
+    DepthFileBasedImageDBImpl(basepath,true)
 {
 
+}
+
+bool DepthDBWithVotesImpl::loadDB(const std::string &filename)
+{
+    return DepthFileBasedImageDBImpl::loadDB(filename, StringParserWithOffsert());
 }
 
 bool DepthDBWithVotesImpl::postprocessFile(const cv::Mat &mat, GeneralStringParser &parser)
 {
     /*put all pixels into the array*/
-    DepthFileBasedImageDB::postprocessFile(mat,parser);
+    DepthFileBasedImageDBImpl::postprocessFile(mat,parser);
 
-    StringParserWithOffsert &typedparser = (StringParserWithOffsert &)parser;
+    StringParserWithOffsert &typedparser = dynamic_cast<StringParserWithOffsert &>(parser);
     std::vector<cv::Point2i> joints;
 
     /*add joint locations*/

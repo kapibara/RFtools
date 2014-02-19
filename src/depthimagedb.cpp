@@ -2,23 +2,25 @@
 
 #include <fstream>
 
-DepthFileBasedImageDB::DepthFileBasedImageDB(const std::string &filename,
-                                             GeneralStringParser &parser,
-                                             const std::string &base,
+DepthFileBasedImageDBImpl::DepthFileBasedImageDBImpl(const std::string &base,
                                              bool constImgSize)
 {
     path_ = base;
     elementCount_ = 0;
     constImgSize_ = constImgSize;
+}
 
+bool DepthFileBasedImageDBImpl::loadDB(const std::string &filename, GeneralStringParser &stringParser){
     try{
-        readFiles(filename,parser);
-    }catch(std::bad_alloc &e){
-        std::cerr << "bad allocation expcetion caught" << std::endl;
+        readFiles(filename,stringParser);
+        return true;
+    }catch(std::exception &e){
+        std::cerr << "expcetion caught: " << e.what() << std::endl;
+        return false;
     }
 }
 
-bool DepthFileBasedImageDB::getDataPoint(unsigned int i, cv::Mat &img, cv::Point2i &coordinate)
+bool DepthFileBasedImageDBImpl::getDataPoint(unsigned int i, cv::Mat &img, cv::Point2i &coordinate)
 {
     if (i >= pointsIndex_.size()){
         return false;
@@ -26,6 +28,7 @@ bool DepthFileBasedImageDB::getDataPoint(unsigned int i, cv::Mat &img, cv::Point
 
     if (pointsIndex_[i].first != previous_)
     {
+        std::cout << "loading from disk: " << i << std::endl;
         //the images is not in cache
         cache_ = cv::imread(files_[pointsIndex_[i].first],-1);
         previous_ = pointsIndex_[i].first;
@@ -38,7 +41,7 @@ bool DepthFileBasedImageDB::getDataPoint(unsigned int i, cv::Mat &img, cv::Point
     return true;
 }
 
-bool DepthFileBasedImageDB::getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate)
+bool DepthFileBasedImageDBImpl::getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate)
 {
 
     if (i >= pointsIndex_.size()){
@@ -65,8 +68,10 @@ bool DepthFileBasedImageDB::getDataPoint(index_type i, std::string &file, cv::Po
     return true;
 }
 
-void DepthFileBasedImageDB::readFiles(const std::string &file, GeneralStringParser &parser)
+void DepthFileBasedImageDBImpl::readFiles(const std::string &file, GeneralStringParser &parser)
 {
+    std::cout << "readFiles()" << std::endl;
+
     std::ifstream input(file.c_str());
     cv::Mat image;
     std::string tmp,filename;
@@ -96,7 +101,7 @@ void DepthFileBasedImageDB::readFiles(const std::string &file, GeneralStringPars
             }
 
             if(constImgSize_){
-                if(~(imgSize_.width == image.cols && imgSize_.height == image.rows)){
+                if((imgSize_.width != image.cols) || (imgSize_.height != image.rows)){
                     std::cerr << "image size is set to constant, while image size differs for the file: "
                               << filename << std::endl;
                 }
@@ -109,7 +114,7 @@ void DepthFileBasedImageDB::readFiles(const std::string &file, GeneralStringPars
     }
 }
 
-bool DepthFileBasedImageDB::postprocessFile(const cv::Mat &mat,GeneralStringParser &parser){
+bool DepthFileBasedImageDBImpl::postprocessFile(const cv::Mat &mat,GeneralStringParser &parser){
     int rows = mat.rows,cols = mat.cols;
     const unsigned short *dataptr;
     cv::Size imgSize(mat.cols,mat.rows);
@@ -133,7 +138,7 @@ bool DepthFileBasedImageDB::postprocessFile(const cv::Mat &mat,GeneralStringPars
     return true;
 }
 
-void DepthFileBasedImageDB::push_pixel(unsigned short index){
+void DepthFileBasedImageDBImpl::push_pixel(unsigned short index){
     try{
         pointsIndex_.push_back(filebased_type(files_.size()-1 ,index));
     }catch(std::bad_alloc &e){

@@ -52,7 +52,7 @@ public:
         return (featureValue != NaN());
     }
 
-    float GetResponse(const MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection& data, unsigned int dataIndex);
+    float GetResponse(MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection& data, unsigned int dataIndex);
 
     bool Serialize(std::ostream &stream) const;
     bool Deserialize(std::istream &stream);

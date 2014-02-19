@@ -7,13 +7,6 @@
 
 /*DB interface required to compute depth features*/
 
-class DepthImageDB: public MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection
-{
-public:
-    typedef unsigned int index_type;
-    virtual bool getDataPoint(index_type i, cv::Mat &img, cv::Point2i &coordinate) = 0;
-};
-
 class GeneralStringParser
 {
 public:
@@ -35,19 +28,35 @@ private:
     std::string str_;
 };
 
+class DepthImageDB: public MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection
+{
+public:
+    typedef unsigned int index_type;
+    virtual bool getDataPoint(index_type i, cv::Mat &img, cv::Point2i &coordinate) = 0;
+};
 
 class DepthFileBasedImageDB: public DepthImageDB
 {
+public:
     typedef unsigned short fileindex_type;
+    virtual bool getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate) = 0;
+    virtual fileindex_type getImageIdx(index_type i) const = 0;
+    virtual std::string imageIdx2Filename(fileindex_type i) const = 0;
+    virtual fileindex_type imageCount() const = 0;
+};
+
+
+class DepthFileBasedImageDBImpl: public DepthFileBasedImageDB
+{
 
 public:
-    DepthFileBasedImageDB(const std::string &filename,
-                          GeneralStringParser &parser,
-                          const std::string &base = "",
-                          bool constImgSize = false);
+    DepthFileBasedImageDBImpl(const std::string &base = "",
+                              bool constImgSize = false);
+
+    virtual bool loadDB(const std::string &filename, GeneralStringParser &stringParser);
 
     bool getDataPoint(index_type i, cv::Mat &img, cv::Point2i &coordinate);
-    virtual bool getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate);
+    bool getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate);
 
     fileindex_type getImageIdx(index_type i) const
     {
@@ -59,11 +68,20 @@ public:
         return files_[i];
     }
 
+    fileindex_type imageCount() const{
+        return files_.size();
+    }
+
+    index_type Count() const{
+        return pointsIndex_.size();
+    }
+
 protected:
     typedef std::pair<fileindex_type,unsigned short> filebased_type; // index -> (filename,i)
 
-    /*define this function to add aditional parts of the database*/
+    /*redefine this function to add aditional parts of the database*/
     virtual bool postprocessFile(const cv::Mat &image,GeneralStringParser &parser);
+
     void push_pixel(unsigned short index);
 
     filebased_type getIndex(index_type i) const{

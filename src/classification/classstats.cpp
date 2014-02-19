@@ -124,10 +124,9 @@ void ClassStats::Clear()
 
 void ClassStats::Aggregate(const MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection& data, unsigned int index)
 {
-    const ClassificationDB& db = (const ClassificationDB&)(data);
+    const ClassificationDB& db = dynamic_cast<const ClassificationDB&>(data);
 
     Aggregate(db.getNumericalLabel(index));
-
 }
 
 void ClassStats::Aggregate(bintype i)

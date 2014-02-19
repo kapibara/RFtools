@@ -35,10 +35,12 @@ public:
     virtual bool getDataPointVote(DepthFileBasedImageDB::index_type i, std::vector<cv::Point2i> &vote) = 0;
 };
 
-class DepthDBWithVotesImpl: public DepthFileBasedImageDB,DepthDBWithVotes
+class DepthDBWithVotesImpl: public DepthFileBasedImageDBImpl, public DepthDBWithVotes
 {
 public:
-    DepthDBWithVotesImpl(const std::string &file, const std::string &basepath="");
+    DepthDBWithVotesImpl(const std::string &basepath="");
+
+    bool loadDB(const std::string &filename);
 
     bool getDataPointVote(index_type i, std::vector<cv::Point2i> &vote);
 
