@@ -43,6 +43,7 @@ public:
     virtual fileindex_type getImageIdx(index_type i) const = 0;
     virtual std::string imageIdx2Filename(fileindex_type i) const = 0;
     virtual fileindex_type imageCount() const = 0;
+    virtual unsigned int clearCacheCallCount() = 0;
 };
 
 
@@ -76,6 +77,12 @@ public:
         return pointsIndex_.size();
     }
 
+    virtual unsigned int clearCacheCallCount(){
+        unsigned int tmp = cachCallCount_;
+        cachCallCount_ = 0;
+        return tmp;
+    }
+
 protected:
     typedef std::pair<fileindex_type,unsigned short> filebased_type; // index -> (filename,i)
 
@@ -103,7 +110,7 @@ private:
     /*reads files one by one*/
     void readFiles(const std::string &file, GeneralStringParser &parser);
     /*simple imlementation to push pixels to an array; called from postprocessFile()*/
-
+    unsigned int cachCallCount_;
 
     std::vector<std::string> files_;
     std::string path_;

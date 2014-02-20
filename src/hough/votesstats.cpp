@@ -16,6 +16,13 @@ void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCol
     }
 
     pointCount_++;
+
+#ifdef ENABLE_OVERFLOW_CHECKS
+    if(pointCount_==0){
+        std::cerr << "VotesStats::Aggregate(): stats overflow" << std::endl;
+        std::cerr.flush();
+    }
+#endif
 }
 
 void VotesStats::Aggregate(const VotesStats& stats)
@@ -24,6 +31,13 @@ void VotesStats::Aggregate(const VotesStats& stats)
         votes_[i].insert(votes_[i].end(),stats.votes_[i].begin(),stats.votes_[i].end());
     }
 
+#ifdef ENABLE_OVERFLOW_CHECKS
+    if ((pointCount_+stats.pointCount_)<pointCount_){
+        std::cerr << "VotesStats::Aggregate(): stats overflow" << std::endl;
+        std::cerr.flush();
+    }
+#endif
+
     pointCount_+=stats.pointCount_;
 }
 
@@ -31,6 +45,42 @@ void VotesStats::Compress()
 {
     /*radical solution*/
     Clear();
+}
+
+bool VotesStats::Serialize(std::ostream &stream) const
+{
+    stream.write((const char *)(&pointCount_),sizeof(pointCount_));
+    stream.write((const char *)(&voteClasses_),sizeof(voteClasses_));
+
+    voteVector::size_type vsize;
+
+    for(int i=0; i<voteClasses_;i++){
+        vsize = votes_[i].size();
+        stream.write((const char *)(&vsize),sizeof(vsize));
+        for(int j=0; j<vsize; j++){
+            stream.write((const char *)(votes_[i][j].x),sizeof(votes_[i][j].x));
+            stream.write((const char *)(votes_[i][j].y),sizeof(votes_[i][j].y));
+        }
+    }
+
+    return true;
+}
+
+bool VotesStats::Deserialize(std::istream &stream)
+{
+    stream.read((char *)(&pointCount_),sizeof(pointCount_));
+    stream.read((char *)(&voteClasses_),sizeof(voteClasses_));
+
+    voteVector::size_type vsize;
+    cv::Point2i p;
+
+    for(int i=0; i<voteClasses_;i++){
+        stream.read((char *)(&vsize),sizeof(vsize));
+        for(int j=0; j<vsize; j++){
+            stream.read((char *)(&p.x),sizeof(p.x));
+            stream.read((char *)(&p.y),sizeof(p.y));
+        }
+    }
 }
 
 double VotesStats::VoteVariance() const

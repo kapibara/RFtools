@@ -8,6 +8,7 @@ DepthFileBasedImageDBImpl::DepthFileBasedImageDBImpl(const std::string &base,
     path_ = base;
     elementCount_ = 0;
     constImgSize_ = constImgSize;
+    cachCallCount_ = 0;
 }
 
 bool DepthFileBasedImageDBImpl::loadDB(const std::string &filename, GeneralStringParser &stringParser){
@@ -28,8 +29,9 @@ bool DepthFileBasedImageDBImpl::getDataPoint(unsigned int i, cv::Mat &img, cv::P
 
     if (pointsIndex_[i].first != previous_)
     {
-        std::cout << "loading from disk: " << i << std::endl;
+        //std::cerr << "loading from disk: " << i << std::endl;
         //the images is not in cache
+        cachCallCount_++;
         cache_ = cv::imread(files_[pointsIndex_[i].first],-1);
         previous_ = pointsIndex_[i].first;
     }

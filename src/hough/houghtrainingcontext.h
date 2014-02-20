@@ -10,9 +10,9 @@ template <class F>
 class HoughTrainingContext: public MicrosoftResearch::Cambridge::Sherwood::ITrainingContext<F,VotesStats>
 {
 public:
-    HoughTrainingContext(unsigned char nClasses_,DepthFeatureFactory &factory):factory_(factory)
+    HoughTrainingContext(unsigned char nClasses,DepthFeatureFactory &factory):factory_(factory)
     {
-        nClasses_ = VoteState.;
+        nClasses_ = nClasses;
     }
 
     virtual F GetRandomFeature(MicrosoftResearch::Cambridge::Sherwood::Random& random)
@@ -30,7 +30,7 @@ public:
         double lvv = leftChild.VoteVariance();
         double rvv = rightChild.VoteVariance();
 
-        if(parent.Size()<=1){
+        if(parent.Size() <=1){
             return 0;
         }
         /*computing parent.VoteVariance() is not optimal*/

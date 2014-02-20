@@ -8,7 +8,8 @@ DepthDBWithVotesImpl::DepthDBWithVotesImpl(const std::string &basepath):
 
 bool DepthDBWithVotesImpl::loadDB(const std::string &filename)
 {
-    return DepthFileBasedImageDBImpl::loadDB(filename, StringParserWithOffsert());
+    StringParserWithOffsert parser;
+    return DepthFileBasedImageDBImpl::loadDB(filename, parser);
 }
 
 bool DepthDBWithVotesImpl::postprocessFile(const cv::Mat &mat, GeneralStringParser &parser)

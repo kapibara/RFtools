@@ -14,7 +14,7 @@ else()
     set(DEV_BASE "/home/kuznetso/Projects/CPP/")
 endif()
 
-set(Forest_DIR "${DEV_BASE}Sherwood/cpp/lib/")
+set(Forest_DIR "${DEV_BASE}MSRFlib/lib/")
 
 if(WIN32)
     set(OpenCV_DIR "${DEV_BASE}custom_build/")
@@ -23,7 +23,6 @@ endif()
 find_package(OpenCV REQUIRED)
 
 include_directories(${HOME}/src)
-#include_directories(${HOME}/include)
 include_directories(${Forest_DIR})
 include_directories(${OpenCV_INCLUDE_DIRS})
 

@@ -63,7 +63,7 @@ public:
 private:
 
     static float NaN(){
-        return 1e10;
+        return 1e5;
     }
 
     cv::Point2i u_,v_;

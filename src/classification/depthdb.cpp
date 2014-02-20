@@ -23,7 +23,8 @@ DepthDBClassImage::DepthDBClassImage(const std::string &basepath):
 
 bool DepthDBClassImage::loadDB(const std::string &filename)
 {
-    return DepthFileBasedImageDBImpl::loadDB(filename,LabelPerImageStringParser());
+    LabelPerImageStringParser parser;
+    return DepthFileBasedImageDBImpl::loadDB(filename,parser);
 }
 
 bool DepthDBClassImage::postprocessFile(const cv::Mat &image, GeneralStringParser &parser){

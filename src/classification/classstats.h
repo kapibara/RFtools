@@ -5,10 +5,11 @@
 #include <ostream>
 
 #define ENABLE_OVERFLOW_CHECKS
+#define ENABLE_BOUNDARY_CHECKS
 
 class ClassStats
 {
-    typedef unsigned int bintype;
+    typedef unsigned long bintype;
 public:
     ClassStats(unsigned short clCount = 0);
     ClassStats(const ClassStats &obj); /*this deep copying might be not needed according to the framework*/

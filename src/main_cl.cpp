@@ -75,7 +75,7 @@ try{
         std::cerr.flush();
 
         Parameter<int> T(1, "No. of trees in the forest.");
-        Parameter<int> D(5, "Maximum tree levels.");
+        Parameter<int> D(2, "Maximum tree levels.");
         Parameter<int> F(100, "No. of candidate feature response functions per split node.");
         Parameter<int> L(10, "No. of candidate thresholds per feature response function.");
         Parameter<bool> verbose(true,"Enables verbose progress indication.");
@@ -133,28 +133,42 @@ try{
     std::cerr << "Forest applied on the test set" << std::endl;
     std::cerr.flush();
 
-    ClassStats clStatsPixel;
-    std::vector<ClassStats> clStatsImage(db.imageCount());
+    ClassStats clStatsPixel(db.classCount());
+    std::vector<ClassStats> clStatsImage(test->imageCount(),ClassStats(db.classCount()));
 
 
-        for(int i=0; i<test->Count(); i++)
+    for(int i=0; i<test->Count(); i++)
+    {
+
+        //clStats for a pixel
+        clStatsPixel.Clear();
+
+        std::cerr << "aggregate data from forest for " << i << "th sample" << std::endl;
+
+        for(int t=0; t< forest->TreeCount(); t++)
         {
-            //clStats for a pixel
-            clStatsPixel.Clear();
+            std::cerr << "leafIndicesPerTree[t][i]" <<leafIndicesPerTree[t][i] << std::endl;
+            if(leafIndicesPerTree[t][i]!=-1)
 
-            for(int t=0; t< forest->TreeCount(); t++)
-            {
                 clStatsPixel.Aggregate(forest->GetTree(t).GetNode(leafIndicesPerTree[t][i]).TrainingDataStatistics);
-            }
-
-            //add statistics to the corresponding image statistics
-            clStatsImage[test->getImageIdx(i)].Aggregate(clStatsPixel);
-
         }
 
-        std::cout << "Statistics computed" << std::endl;
+        std::cerr << "classCount_ " << (int)clStatsPixel.ClassCount() << std::endl;
+        std::cerr << "aggregate data for image " << std::endl;
+        std::cerr.flush();
 
-        std::cout.flush();
+        if (clStatsPixel.ClassCount()>0){
+            std::cerr << "test->getImageIdx(i)" << test->getImageIdx(i) << std::endl;
+            std::cerr << "class decision: " << (int) (clStatsPixel.ClassDecision()) << std::endl;
+        //add statistics to the corresponding image statistics
+//            clStatsImage[test->getImageIdx(i)].Aggregate(clStatsPixel.ClassDecision());
+        }else
+            std::cerr << "pixel cannot be classified" << std::endl;
+
+    }
+
+    std::cout << "Statistics computed" << std::endl;
+    std::cout.flush();
 
     }catch(std::exception &e){
         std::cerr << "exception caught 2: " << e.what() << std::endl;

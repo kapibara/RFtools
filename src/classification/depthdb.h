@@ -21,7 +21,6 @@ public:
     }
 
     std::string getLabel(){
-        std::cout << strsplit_.size() << std::endl;
         return strsplit_[1];
     }
 
@@ -131,6 +130,10 @@ public:
 
     fileindex_type getImageIdx(index_type i) const {
         return source_.getImageIdx(subindex_[i]);
+    }
+
+    unsigned int clearCacheCallCount(){
+        return source_.clearCacheCallCount();
     }
 
 private:
