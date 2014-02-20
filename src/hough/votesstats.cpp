@@ -58,8 +58,8 @@ bool VotesStats::Serialize(std::ostream &stream) const
         vsize = votes_[i].size();
         stream.write((const char *)(&vsize),sizeof(vsize));
         for(int j=0; j<vsize; j++){
-            stream.write((const char *)(votes_[i][j].x),sizeof(votes_[i][j].x));
-            stream.write((const char *)(votes_[i][j].y),sizeof(votes_[i][j].y));
+            stream.write((const char *)(&(votes_[i][j].x)),sizeof(votes_[i][j].x));
+            stream.write((const char *)(&(votes_[i][j].y)),sizeof(votes_[i][j].y));
         }
     }
 
@@ -77,8 +77,8 @@ bool VotesStats::Deserialize(std::istream &stream)
     for(int i=0; i<voteClasses_;i++){
         stream.read((char *)(&vsize),sizeof(vsize));
         for(int j=0; j<vsize; j++){
-            stream.read((char *)(&p.x),sizeof(p.x));
-            stream.read((char *)(&p.y),sizeof(p.y));
+            stream.read((char *)(&(p.x)),sizeof(p.x));
+            stream.read((char *)(&(p.y)),sizeof(p.y));
         }
     }
 }
