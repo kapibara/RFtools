@@ -12,8 +12,11 @@ class RFUtils
 {
 public:
 
-    template<class OutputDB>
-    static std::pair<std::auto_ptr<OutputDB>, std::auto_ptr<OutputDB> > splitRandom(Random &random, DepthFileBasedImageDB &db)
+    template<class OutputDB,class OutputDBPClass>
+    static void splitRandom(Random &random,
+                            DepthFileBasedImageDB &db,
+                            std::auto_ptr<OutputDBPClass> &train,
+                            std::auto_ptr<OutputDBPClass> &test)
     {
         std::vector<DepthFileBasedImageDB::index_type> train_ind;
         std::vector<DepthFileBasedImageDB::index_type> test_ind;
@@ -40,22 +43,23 @@ public:
             }
         }
 
-        std::auto_ptr<OutputDB> train(new OutputDB(db,train_ind));
-        std::auto_ptr<OutputDB> test(new OutputDB(db,train_ind));
-
-        return std::make_pair(train,test);
+        train.reset(new OutputDB(db,train_ind));
+        test.reset(new OutputDB(db,test_ind));
     }
 
     template<class F,class S>
-    static double testClassificationForest(Forest<F, S> &forest, S instance, DepthFileBasedImageDB &test)
+    static double testClassificationForest(Forest<F, S> &forest,
+                                           S instance,
+                                           DepthFileBasedImageDB &test)
     {
         std::vector<std::vector<int> > leafIndicesPerTree;
 
         forest.Apply(test, leafIndicesPerTree);
 
+        std::cerr << "forest applied" << std::endl;
+
         S stats = instance;
         std::vector<S> perImageStats(test.imageCount(),instance);
-
 
         for(int i=0; i<test.Count(); i++)
         {
@@ -64,17 +68,34 @@ public:
 
             for(int t=0; t< forest.TreeCount(); t++)
             {
-                if(leafIndicesPerTree[t][i]!=-1)
+                if(leafIndicesPerTree[t][i]>0)
 
-                    stats.Aggregate(forest->GetTree(t).GetNode(leafIndicesPerTree[t][i]).TrainingDataStatistics);
+                    stats.Aggregate(forest.GetTree(t).GetNode(leafIndicesPerTree[t][i]).TrainingDataStatistics);
             }
-            std::cerr << "aggregate data for image " << std::endl;
-            std::cerr.flush();
 
-            //add statistics to the corresponding image statistics
-            perImageStats[test.getImageIdx(i)].Aggregate(stats);
+            perImageStats[test.getImageIdx(i)].Aggregate(stats.ClassDecision());
 
         }
+
+        std::cerr << "statistics collected" << std::endl;
+
+        double result = 0;
+        ClassificationDB &testcl = dynamic_cast<ClassificationDB &>(test);
+        std::vector<bool> seen(test.imageCount(),false);
+
+        for(int i=0; i<test.Count(); i++)
+        {
+            if(!seen[test.getImageIdx(i)]){
+                if(testcl.getNumericalLabel(i)!= perImageStats[test.getImageIdx(i)].ClassDecision()){
+                    result+=1;//increase error count;
+                }
+                seen[test.getImageIdx(i)] = true;
+            }
+        }
+
+        std::cerr << "error computed" << std::endl;
+
+        return result/test.imageCount();
     }
 };
 

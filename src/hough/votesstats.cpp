@@ -101,7 +101,6 @@ bool VotesStats::Deserialize(std::istream &stream)
         votes_.push_back(voteVector());
         stream.read((char *)(&vsize),sizeof(vsize));
         for(int j=0; j<vsize; j++){
-
             stream.read((char *)(&(p.x)),sizeof(p.x));
             stream.read((char *)(&(p.y)),sizeof(p.y));
 

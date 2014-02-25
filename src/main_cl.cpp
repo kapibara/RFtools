@@ -14,11 +14,13 @@
 #include "Forest.h"
 #include "ForestTrainer.h"
 #include "parameter.h"
-//#include "depthfeature.h"
+#include "rfutils.h"
 #include "classification/classstats.h"
 #include "classification/imagepixelstats.h"
 
 #include <climits>
+
+
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 
 int main(int argc, char **argv)
@@ -30,45 +32,19 @@ if (argc<2){
 try{
    std::auto_ptr<Forest<DepthFeature, ClassStats> > forest;
 
-   DepthDBClassImage db;
-   DepthFileBasedImageDB *test;
+   std::auto_ptr<DepthDBClassImage> db(new DepthDBClassImage());
+   std::auto_ptr<DepthFileBasedImageDB> test;
+   std::auto_ptr<DepthFileBasedImageDB> train;
    Random  random;
+   std::vector<std::vector<int> > leafIndicesPerTree;
 
-   db.loadDB(argv[1]);
-
-   std::cout << "DB: "<< db.classCount() << std::endl;
+   db->loadDB(argv[1]);
 
    if (argc==2){
         std::cout << "starting training ... " << std::endl;
-        std::vector<DepthImageDB::index_type> train_ind;
-        std::vector<DepthImageDB::index_type> test_ind;
+        RFUtils::splitRandom<DepthDBSubindex ,DepthFileBasedImageDB>(random,*db,train,test);
 
-        DepthImageDB::index_type pi=0;
-        DepthFileBasedImageDB::fileindex_type fi = 0;
-
-        for(int i=0; i<db.imageCount(); i++){
-            if(random.NextDouble()<0.5){
-                fi = db.getImageIdx(pi);
-                while(db.getImageIdx(pi) == fi) //optimal eval expected
-                {
-                    train_ind.push_back(pi); pi++;
-                    if (pi>= db.Count()) break;
-                }
-            }
-            else {
-                fi = db.getImageIdx(pi);
-                while(db.getImageIdx(pi) == fi ) //optimal eval expected
-                {
-                    test_ind.push_back(pi); pi++;
-                    if (pi>= db.Count()) break;
-                }
-            }
-        }
-
-        DepthDBSubindex train(db,train_ind);
-        test = new DepthDBSubindex(db,test_ind);
-
-        std::cout << "Train samples:" << train.Count() << std::endl;
+        std::cout << "Train samples:" << train->Count() << std::endl;
         std::cout << "Test samples:" << test->Count() << std::endl;
 
         std::cerr << "db loaded ... " << std::endl;
@@ -87,16 +63,16 @@ try{
         trainingParameters.NumberOfTrees = T.value();
         trainingParameters.Verbose = verbose.value();
 
-        std::cerr <<"class count: "  << db.classCount() << " element count: " << db.Count()<<std::endl;
+        std::cerr <<"class count: "  << db->classCount() << " element count: " << db->Count()<<std::endl;
 
         DepthFeatureFactory factory;
-        ClTrainingContext<DepthFeature, ClassStats> context(db.classCount(),factory);
+        ClTrainingContext<DepthFeature, ClassStats> context(db->classCount(),factory);
 
         std::cerr << "start forest training ... " << std::endl;
         std::cerr.flush();
 
         forest = ForestTrainer<DepthFeature, ClassStats>::TrainForest (
-                random, trainingParameters, context, train );
+                random, trainingParameters, context, *train );
 
         std::cerr << "Forest trained: " << forest->GetTree(0).NodeCount() << std::endl;
         std::cerr.flush();
@@ -117,58 +93,19 @@ try{
         std::cerr << "Forest deserialized" << std::endl;
         std::cerr.flush();
 
-        test = &db;
-    }
+        test = db;
+   }
 
-    std::vector<std::vector<int> > leafIndicesPerTree;
-    try{
+    ClassificationDB *testascldb = dynamic_cast<ClassificationDB *>(test.get());
 
-        forest->Apply(*test, leafIndicesPerTree);
-    }
-    catch(std::exception &e){
-        std::cerr << "exception caught:" << e.what() << std::endl;
-        std::cerr.flush();
-    }
+    ClassStats clStatsPixel(testascldb->classCount());
 
-    std::cerr << "Forest applied on the test set" << std::endl;
+    double result = RFUtils::testClassificationForest<DepthFeature,ClassStats>(*forest,clStatsPixel,*test);
+
+    std::cerr << "Error: " << result << std::endl;
+
+    std::cerr << "Statistics computed" << std::endl;
     std::cerr.flush();
-
-    ClassStats clStatsPixel(db.classCount());
-    std::vector<ClassStats> clStatsImage(test->imageCount(),ClassStats(db.classCount()));
-
-
-    for(int i=0; i<test->Count(); i++)
-    {
-
-        //clStats for a pixel
-        clStatsPixel.Clear();
-
-        std::cerr << "aggregate data from forest for " << i << "th sample" << std::endl;
-
-        for(int t=0; t< forest->TreeCount(); t++)
-        {
-            std::cerr << "leafIndicesPerTree[t][i]" <<leafIndicesPerTree[t][i] << std::endl;
-            if(leafIndicesPerTree[t][i]!=-1)
-
-                clStatsPixel.Aggregate(forest->GetTree(t).GetNode(leafIndicesPerTree[t][i]).TrainingDataStatistics);
-        }
-
-        std::cerr << "classCount_ " << (int)clStatsPixel.ClassCount() << std::endl;
-        std::cerr << "aggregate data for image " << std::endl;
-        std::cerr.flush();
-
-        if (clStatsPixel.ClassCount()>0){
-            std::cerr << "test->getImageIdx(i)" << test->getImageIdx(i) << std::endl;
-            std::cerr << "class decision: " << (int) (clStatsPixel.ClassDecision()) << std::endl;
-        //add statistics to the corresponding image statistics
-//            clStatsImage[test->getImageIdx(i)].Aggregate(clStatsPixel.ClassDecision());
-        }else
-            std::cerr << "pixel cannot be classified" << std::endl;
-
-    }
-
-    std::cout << "Statistics computed" << std::endl;
-    std::cout.flush();
 
     }catch(std::exception &e){
         std::cerr << "exception caught 2: " << e.what() << std::endl;
