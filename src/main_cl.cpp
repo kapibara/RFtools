@@ -51,8 +51,8 @@ try{
         std::cerr.flush();
 
         Parameter<int> T(1, "No. of trees in the forest.");
-        Parameter<int> D(2, "Maximum tree levels.");
-        Parameter<int> F(100, "No. of candidate feature response functions per split node.");
+        Parameter<int> D(10, "Maximum tree levels.");
+        Parameter<int> F(50, "No. of candidate feature response functions per split node.");
         Parameter<int> L(10, "No. of candidate thresholds per feature response function.");
         Parameter<bool> verbose(true,"Enables verbose progress indication.");
 
@@ -68,7 +68,7 @@ try{
         DepthFeatureFactory factory;
         ClTrainingContext<DepthFeature, ClassStats> context(db->classCount(),factory);
 
-        std::cerr << "start forest training ... " << std::endl;
+        std::cerr << "start forest training ... ; depth " << D.value() << std::endl;
         std::cerr.flush();
 
         forest = ForestTrainer<DepthFeature, ClassStats>::TrainForest (
