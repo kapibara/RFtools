@@ -49,7 +49,7 @@ public:
 
     static bool isValid(float featureValue){
         /*this is ok, since featureValue supposed to be exactly the same*/
-        return (featureValue != NaN());
+        return (featureValue < NaN());
     }
 
     float GetResponse(MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection& data, unsigned int dataIndex);

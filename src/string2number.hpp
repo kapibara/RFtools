@@ -13,4 +13,13 @@ T str2num(const std::string &s){
     return result;
 }
 
+template<typename T>
+std::string num2str(T number){
+    std::stringstream stream;
+
+    stream << number;
+
+    return stream.str();
+}
+
 #endif

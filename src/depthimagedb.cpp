@@ -72,8 +72,6 @@ bool DepthFileBasedImageDBImpl::getDataPoint(index_type i, std::string &file, cv
 
 void DepthFileBasedImageDBImpl::readFiles(const std::string &file, GeneralStringParser &parser)
 {
-    std::cout << "readFiles()" << std::endl;
-
     std::ifstream input(file.c_str());
     cv::Mat image;
     std::string tmp,filename;
@@ -82,38 +80,45 @@ void DepthFileBasedImageDBImpl::readFiles(const std::string &file, GeneralString
 
         while(!input.eof()){
 
+            tmp = "";
+
             input >> tmp;
-            parser.setString(tmp);
-            filename = parser.getFilename();
 
-            if (path_.length()>0){
-                filename = path_+filename;
-            }
+            if (!tmp.empty()){
 
-            std::cout << "reading file: " << filename << std::endl;
+                parser.setString(tmp);
+                filename = parser.getFilename();
 
-            files_.push_back(filename);
-            image = cv::imread(filename,-1);
-
-            if (elementCount_ == 0){
-                if(constImgSize_)
-                    imgSize_ = cv::Size(image.cols,image.rows);
-                cache_.push_back(image);
-                previous_ = elementCount_;
-            }
-
-            if(constImgSize_){
-                if((imgSize_.width != image.cols) || (imgSize_.height != image.rows)){
-                    std::cerr << "image size is set to constant, while image size differs for the file: "
-                              << filename << std::endl;
+                if (path_.length()>0){
+                    filename = path_+filename;
                 }
+
+                std::cout << "reading file: " << filename << std::endl;
+
+                files_.push_back(filename);
+                image = cv::imread(filename,-1);
+
+                if (elementCount_ == 0){
+                    if(constImgSize_)
+                        imgSize_ = cv::Size(image.cols,image.rows);
+                    cache_.push_back(image);
+                    previous_ = elementCount_;
+                }
+
+                if(constImgSize_){
+                    if((imgSize_.width != image.cols) || (imgSize_.height != image.rows)){
+                        std::cerr << "image size is set to constant, while image size differs for the file: "
+                              << filename << std::endl;
+                    }
+                }
+
+                postprocessFile(image,parser); /*user-defined function*/
+
+                elementCount_++;
             }
-
-            postprocessFile(image,parser); /*user-defined function*/
-
-            elementCount_++;
         }
     }
+    input.close();
 }
 
 bool DepthFileBasedImageDBImpl::postprocessFile(const cv::Mat &mat,GeneralStringParser &parser){

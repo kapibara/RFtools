@@ -3,7 +3,7 @@
 DepthDBWithVotesImpl::DepthDBWithVotesImpl(const std::string &basepath):
     DepthFileBasedImageDBImpl(basepath,true)
 {
-
+    voteClassCount_ = 0;
 }
 
 bool DepthDBWithVotesImpl::loadDB(const std::string &filename)
@@ -24,6 +24,9 @@ bool DepthDBWithVotesImpl::postprocessFile(const cv::Mat &mat, GeneralStringPars
     typedparser.getJoints(joints);
     votes_.push_back(joints);
 
+    if (voteClassCount_<joints.size())
+        voteClassCount_ = joints.size();
+
     return true;
 }
 
@@ -31,6 +34,7 @@ bool DepthDBWithVotesImpl::postprocessFile(const cv::Mat &mat, GeneralStringPars
 bool DepthDBWithVotesImpl::getDataPointVote(index_type i, std::vector<cv::Point2i> &vote)
 {
     filebased_type pair = getIndex(i);
+
     cv::Point2i x = index2point(pair.second,imgSize_);//we know that imgSize is constant
 
     for(int i=0; i<votes_[pair.first].size();i++){

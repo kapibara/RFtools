@@ -15,8 +15,9 @@ public:
    }
 
    void getJoints(std::vector<cv::Point2i> &j){
-        for(int i=0; i<strsplit_.size();i+=2){
-            j.push_back(cv::Point2i(str2num<int>(strsplit_[i]),str2num<int>(strsplit_[i+1])));
+        for(int i=1; i<strsplit_.size();i+=2){
+            j.push_back(cv::Point2i(std::floor(str2num<float>(strsplit_[i])),
+                                    std::floor(str2num<float>(strsplit_[i+1]))));
         }
    }
 
@@ -38,17 +39,24 @@ public:
 class DepthDBWithVotesImpl: public DepthFileBasedImageDBImpl, public DepthDBWithVotes
 {
 public:
+
+    typedef unsigned char vote_class_count;
     DepthDBWithVotesImpl(const std::string &basepath="");
 
     bool loadDB(const std::string &filename);
 
     bool getDataPointVote(index_type i, std::vector<cv::Point2i> &vote);
 
+    vote_class_count voteClassCount(){
+        return voteClassCount_;
+    }
+
 protected:
     bool postprocessFile(const cv::Mat &image, GeneralStringParser &parser);
 
 private:
 
+    vote_class_count voteClassCount_;
     std::vector<std::vector<cv::Point2i> > votes_; //stores joint locations for each image
 };
 
