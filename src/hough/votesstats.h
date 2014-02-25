@@ -14,15 +14,16 @@ class VotesStats
 public:
 
     typedef voteVector::const_iterator const_iterator;
+    typedef unsigned int element_count;
 
-    VotesStats(unsigned char voteClasses)
+    VotesStats(unsigned char voteClasses = 0)
     {
-        dthreashold2_ = 10;
+        dthreashold2_ = 100*100;
         pointCount_=0;
         voteClasses_ = voteClasses;
 
         for(int i=0 ; i < voteClasses_; i++){
-            votes_.push_back(std::vector<cv::Point2i>());
+            votes_.push_back(voteVector());
         }
     }
 
@@ -31,6 +32,7 @@ public:
        for(int i=0 ; i < voteClasses_; i++){
            votes_[i].clear();
        }
+       pointCount_ = 0;
     }
 
     const_iterator begin(unsigned char voteClass) const{
@@ -45,7 +47,7 @@ public:
 
     void Aggregate(const VotesStats& i);
 
-    int Size() const
+    element_count Size() const
     {
         return pointCount_;
     }
@@ -60,9 +62,13 @@ public:
     double VoteVariance() const;
 
     bool Serialize(std::ostream &stream) const;
+    bool SerializeChar(std::ostream &stream) const;
     bool Deserialize(std::istream &stream);
 
-    virtual VotesStats DeepClone() const;
+    virtual VotesStats DeepClone() const
+    {
+        return VotesStats(*this);
+    }
 
 private:
 
@@ -81,7 +87,7 @@ private:
 
     int dthreashold2_;
     unsigned char voteClasses_;
-    unsigned long pointCount_;
+    element_count pointCount_;
 
 };
 

@@ -2,9 +2,38 @@
 
 HoughVotesStats::HoughVotesStats(const cv::Size &s, unsigned char voteClass)
 {
-    mat_ = cv::Mat(s,CV_8UC4,0);
     voteClass_ = voteClass;
-    outOfBoundaries_ = 0;
+    mat_ = cv::Mat(s.height,s.width,CV_8UC4);
+    Clear();
+}
+
+void HoughVotesStats::Aggregate(const HoughVotesStats &stats)
+{
+    if(mat_.rows != stats.mat_.rows | mat_.cols != stats.mat_.cols){
+        std::cerr << "internal dimensions do not match" << std::endl;
+        return;
+    }
+
+    if(voteClass_ != stats.voteClass_){
+        std::cerr << "voteClass does not match" << std::endl;
+    }
+
+    int rows = mat_.rows, cols = mat_.cols;
+
+    if(mat_.isContinuous() & stats.mat_.isContinuous()){
+        cols*=rows;
+        rows=1;
+    }
+
+    unsigned int *thisptr,*statsptr;
+
+    for(int i=0; i<rows;i++){
+        thisptr = mat_.ptr<unsigned int>(i);
+        statsptr = mat_.ptr<unsigned int>(i);
+        for(int j=0; j<cols; j++){
+            thisptr[j]+=statsptr[j];
+        }
+    }
 }
 
 void HoughVotesStats::Aggregate(const cv::Point2i &abs, const VotesStats& stats)
@@ -35,21 +64,51 @@ void HoughVotesStats::Aggregate(const cv::Point2i &abs, const cv::Point2i &vote)
     }
     else
     {
-        mat_.at<unsigned int>(tmp)++;
+        mat_.at<unsigned int>(tmp.x,tmp.y)+=1;
     }
 }
 
-bool HoughVotesStats::Serialize(std::string &filename)
+bool HoughVotesStats::Serialize(const std::string &filename)
 {
-    cv::Mat out;
+    cv::Mat out(mat_.rows,mat_.cols,CV_8UC1);
+    int rows = mat_.rows, cols = mat_.cols;
 
-    mat_.convertTo(out,CV_8UC1);
+    if(mat_.isContinuous() & out.isContinuous()){
+        cols*=rows;
+        rows=1;
+    }
+
+    unsigned int *matptr;
+    unsigned char *outptr;
+
+    unsigned int maxval = 0;
+    for(int i=0; i<rows;i++){
+        matptr = mat_.ptr<unsigned int>(i);
+        for(int j=0; j<cols; j++){
+            if(matptr[j]>maxval){
+                maxval = matptr[j];
+            }
+        }
+    }
+
+    if(maxval>0){
+        for(int i=0; i<rows;i++){
+            matptr = mat_.ptr<unsigned int>(i);
+            outptr = out.ptr(i);
+            for(int j=0; j<cols; j++){
+                outptr[j] = ((double)matptr[j])/maxval*255.0;
+            }
+        }
+    }
 
     cv::imwrite(filename,out);
+
+    return true;
 }
 
 bool HoughVotesStats::Serialize(std::ostream &out)
 {
+    out.write((const char *)(&outOfBoundaries_),sizeof(outOfBoundaries_));
     out.write((const char *)(&mat_.cols),sizeof(mat_.cols));
     out.write((const char *)(&mat_.rows),sizeof(mat_.rows));
 
@@ -67,5 +126,5 @@ bool HoughVotesStats::Serialize(std::ostream &out)
         out.write((const char *)ptr,sizeof(unsigned int)*cols);
     }
 
-
+    return true;
 }
