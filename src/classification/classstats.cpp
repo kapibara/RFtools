@@ -62,7 +62,7 @@ unsigned char ClassStats::ClassDecision() const
 bool ClassStats::Serialize(std::ostream &stream) const{
 
     stream.write((const char *)(&binCount_),sizeof(binCount_));
-    stream.write((const char *)bins_,sizeof(bintype)*binCount_);
+    stream.write((const char *)bins_,sizeof(bins_[0])*binCount_);
 
     return true;
 }

@@ -2,6 +2,7 @@
 #define STRING2NUMBER_H
 
 #include <string>
+#include <sstream>
 
 template<typename T>
 T str2num(const std::string &s){
@@ -14,9 +15,12 @@ T str2num(const std::string &s){
 }
 
 template<typename T>
-std::string num2str(T number){
+std::string num2str(T number, int fieldwidth = 0){
     std::stringstream stream;
 
+    if(fieldwidth > 0){
+        stream.width(fieldwidth);
+    }
     stream << number;
 
     return stream.str();

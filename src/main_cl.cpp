@@ -15,18 +15,28 @@
 #include "ForestTrainer.h"
 #include "parameter.h"
 #include "rfutils.h"
+#include "localcache.h"
 #include "classification/classstats.h"
 #include "classification/imagepixelstats.h"
 
 #include <climits>
-
+#include "split.h"
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 
 int main(int argc, char **argv)
 {
+
 if (argc<2){
     std::cout << "exec <db file>" << std::endl;
+    exit(-1);
+}
+
+LocalCache cache(argc,argv);
+
+if(!cache.init()){
+    std::cerr << "failed to initialize temporary directory" << std::endl;
+    exit(-1);
 }
 
 try{
@@ -51,7 +61,7 @@ try{
         std::cerr.flush();
 
         Parameter<int> T(1, "No. of trees in the forest.");
-        Parameter<int> D(5, "Maximum tree levels.");
+        Parameter<int> D(2, "Maximum tree levels.");
         Parameter<int> F(100, "No. of candidate feature response functions per split node.");
         Parameter<int> L(10, "No. of candidate thresholds per feature response function.");
         Parameter<bool> verbose(true,"Enables verbose progress indication.");
@@ -77,7 +87,7 @@ try{
         std::cerr << "Forest trained: " << forest->GetTree(0).NodeCount() << std::endl;
         std::cerr.flush();
 
-        std::ofstream out("testout");
+        std::ofstream out(cache.base() + std::string("testout"));
         forest->Serialize(out);
 
         std::cerr << "Forest saved" << std::endl;
@@ -100,7 +110,7 @@ try{
 
     ClassStats clStatsPixel(testascldb->classCount());
 
-    double result = RFUtils::testClassificationForest<DepthFeature,ClassStats>(*forest,clStatsPixel,*test);
+    double result = RFUtils::testClassificationForest<DepthFeature,ClassStats>(*forest,clStatsPixel,*test,cache,true);
 
     std::cerr << "Error: " << result << std::endl;
 

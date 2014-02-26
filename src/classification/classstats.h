@@ -9,7 +9,7 @@
 
 class ClassStats
 {
-    typedef unsigned long bintype;
+    typedef unsigned int bintype;
 public:
     ClassStats(unsigned short clCount = 0);
     ClassStats(const ClassStats &obj); /*this deep copying might be not needed according to the framework*/

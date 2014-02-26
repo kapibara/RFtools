@@ -5,6 +5,8 @@
 #include <Random.h>
 #include "depthimagedb.h"
 #include "classification/depthdb.h"
+#include "localcache.h"
+#include "string2number.hpp"
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 
@@ -48,9 +50,9 @@ public:
     }
 
     template<class F,class S>
-    static double testClassificationForest(Forest<F, S> &forest,
+    static double testClassificationForest(Forest<F,S> &forest,
                                            S instance,
-                                           DepthFileBasedImageDB &test)
+                                           DepthFileBasedImageDB &test, LocalCache &cache, bool saveBad)
     {
         std::vector<std::vector<int> > leafIndicesPerTree;
 
@@ -82,14 +84,26 @@ public:
         double result = 0;
         ClassificationDB &testcl = dynamic_cast<ClassificationDB &>(test);
         std::vector<bool> seen(test.imageCount(),false);
+        std::string filename;
+        std::ofstream stream;
 
         for(int i=0; i<test.Count(); i++)
         {
             if(!seen[test.getImageIdx(i)]){
+                seen[test.getImageIdx(i)] = true;
+                std::cout << "i: " << i << " num label: " << testcl.getNumericalLabel(i)
+                          << "decision: " << (int) perImageStats[test.getImageIdx(i)].ClassDecision() << std::endl;
                 if(testcl.getNumericalLabel(i)!= perImageStats[test.getImageIdx(i)].ClassDecision()){
                     result+=1;//increase error count;
+
+                    if(saveBad){
+                        stream.open(cache.base() +
+                                    testcl.labelIndex2Name(testcl.getNumericalLabel(i)) +
+                                    num2str<int>(i),std::ios_base::binary);
+                        perImageStats[test.getImageIdx(i)].Serialize(stream);
+                        stream.close();
+                    }
                 }
-                seen[test.getImageIdx(i)] = true;
             }
         }
 
@@ -97,6 +111,7 @@ public:
 
         return result/test.imageCount();
     }
+
 };
 
 #endif // RFUTILS_H
