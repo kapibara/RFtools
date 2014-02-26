@@ -73,8 +73,6 @@ int main(int argc, char **argv)
 
         std::cout << "apply forest" << std::endl;
 
-
-
         HoughVotesStats fullStats(cv::Size(240,320),0);
         cv::Point2i current;
         std::string tmpstr;

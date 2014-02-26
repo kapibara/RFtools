@@ -27,6 +27,10 @@ public:
 
     unsigned char ClassDecision() const;
 
+    void Compress(){
+        //do nothing
+    }
+
     ClassStats & operator=(const ClassStats & obj); /*this deep copying might be not needed according to the framework*/
 
     bintype SampleCount(){

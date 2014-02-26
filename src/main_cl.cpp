@@ -51,7 +51,7 @@ try{
         std::cerr.flush();
 
         Parameter<int> T(1, "No. of trees in the forest.");
-        Parameter<int> D(2, "Maximum tree levels.");
+        Parameter<int> D(5, "Maximum tree levels.");
         Parameter<int> F(100, "No. of candidate feature response functions per split node.");
         Parameter<int> L(10, "No. of candidate thresholds per feature response function.");
         Parameter<bool> verbose(true,"Enables verbose progress indication.");
