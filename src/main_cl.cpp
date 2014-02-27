@@ -19,6 +19,7 @@
 #include "classification/imagepixelstats.h"
 
 #include <climits>
+#include <time.h>
 
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
@@ -42,10 +43,11 @@ try{
 
    if (argc==2){
         std::cout << "starting training ... " << std::endl;
-        RFUtils::splitRandom<DepthDBSubindex ,DepthFileBasedImageDB>(random,*db,train,test);
+        //RFUtils::splitRandom<DepthDBSubindex ,DepthFileBasedImageDB>(random,*db,train,test);
 
-        std::cout << "Train samples:" << train->Count() << std::endl;
-        std::cout << "Test samples:" << test->Count() << std::endl;
+
+//        std::cout << "Train samples:" << train->Count() << std::endl;
+//        std::cout << "Test samples:" << test->Count() << std::endl;
 
         std::cerr << "db loaded ... " << std::endl;
         std::cerr.flush();
@@ -68,16 +70,26 @@ try{
         DepthFeatureFactory factory;
         ClTrainingContext<DepthFeature, ClassStats> context(db->classCount(),factory);
 
+        train = db;
+
         std::cerr << "start forest training ... ; depth " << D.value() << std::endl;
         std::cerr.flush();
+
+        time_t start,end;
+
+        time(&start);
 
         forest = ForestTrainer<DepthFeature, ClassStats>::TrainForest (
                 random, trainingParameters, context, *train );
 
+        time(&end);
+        double dif = difftime (end,start);
+
         std::cerr << "Forest trained: " << forest->GetTree(0).NodeCount() << std::endl;
+        std::cerr << dif << " seconds ellapsed" << std::endl;
         std::cerr.flush();
 
-        std::ofstream out("testout");
+        std::ofstream out("testout_fast");
         forest->Serialize(out);
 
         std::cerr << "Forest saved" << std::endl;
@@ -93,14 +105,18 @@ try{
         std::cerr << "Forest deserialized" << std::endl;
         std::cerr.flush();
 
-        test = db;
+        train = db;
    }
+
+   test = train;
 
     ClassificationDB *testascldb = dynamic_cast<ClassificationDB *>(test.get());
 
     ClassStats clStatsPixel(testascldb->classCount());
 
+
     double result = RFUtils::testClassificationForest<DepthFeature,ClassStats>(*forest,clStatsPixel,*test);
+
 
     std::cerr << "Error: " << result << std::endl;
 

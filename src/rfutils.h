@@ -83,11 +83,22 @@ public:
         ClassificationDB &testcl = dynamic_cast<ClassificationDB &>(test);
         std::vector<bool> seen(test.imageCount(),false);
 
+        for(int i=0; i< seen.size(); i++){
+            seen[i] = false;
+        }
+        std::cerr << "computing statistics for :" << test.imageCount() << std::endl;
+
         for(int i=0; i<test.Count(); i++)
         {
+ //           std::cerr<< "image index" << test.getImageIdx(i) << std::endl;
             if(!seen[test.getImageIdx(i)]){
+                std::cerr << "not seen:" << test.getImageIdx(i) << std::endl;
                 if(testcl.getNumericalLabel(i)!= perImageStats[test.getImageIdx(i)].ClassDecision()){
-                    result+=1;//increase error count;
+                    std::cerr << "false decision" << std::endl;
+                    std::cerr << "gt: " << testcl.getNumericalLabel(i)
+                              << "per im stats: " <<  (int)perImageStats[test.getImageIdx(i)].ClassDecision()
+                              << std::endl;
+                   result+=1;//increase error count;
                 }
                 seen[test.getImageIdx(i)] = true;
             }
