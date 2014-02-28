@@ -15,29 +15,40 @@
 #include "ForestTrainer.h"
 #include "parameter.h"
 #include "rfutils.h"
+#include "localcache.h"
 #include "classification/classstats.h"
 #include "classification/imagepixelstats.h"
 
 #include <climits>
+
 #include <time.h>
+#include "split.h"
 
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 
 int main(int argc, char **argv)
 {
+
 if (argc<2){
     std::cout << "exec <db file>" << std::endl;
+    exit(-1);
+}
+
+LocalCache cache(argc,argv,"/home/kuznetso/tmp");
+
+if(!cache.init()){
+    std::cerr << "failed to initialize temporary directory" << std::endl;
+    exit(-1);
 }
 
 try{
    std::auto_ptr<Forest<DepthFeature, ClassStats> > forest;
 
-   std::auto_ptr<DepthDBClassImage> db(new DepthDBClassImage());
-   std::auto_ptr<DepthFileBasedImageDB> test;
-   std::auto_ptr<DepthFileBasedImageDB> train;
+   DepthDBClassImage * db = new DepthDBClassImage();
+   DepthFileBasedImageDB *test;
+   DepthFileBasedImageDB *train;
    Random  random;
-   std::vector<std::vector<int> > leafIndicesPerTree;
 
    db->loadDB(argv[1]);
 
@@ -53,8 +64,8 @@ try{
         std::cerr.flush();
 
         Parameter<int> T(1, "No. of trees in the forest.");
-        Parameter<int> D(10, "Maximum tree levels.");
-        Parameter<int> F(50, "No. of candidate feature response functions per split node.");
+        Parameter<int> D(18, "Maximum tree levels.");
+        Parameter<int> F(100, "No. of candidate feature response functions per split node.");
         Parameter<int> L(10, "No. of candidate thresholds per feature response function.");
         Parameter<bool> verbose(true,"Enables verbose progress indication.");
 
@@ -68,9 +79,7 @@ try{
         std::cerr <<"class count: "  << db->classCount() << " element count: " << db->Count()<<std::endl;
 
         DepthFeatureFactory factory;
-        ClTrainingContext<DepthFeature, ClassStats> context(db->classCount(),factory);
-
-        train = db;
+        ClTrainingContext context(db->classCount(),factory);
 
         std::cerr << "start forest training ... ; depth " << D.value() << std::endl;
         std::cerr.flush();
@@ -80,7 +89,7 @@ try{
         time(&start);
 
         forest = ForestTrainer<DepthFeature, ClassStats>::TrainForest (
-                random, trainingParameters, context, *train );
+                random, trainingParameters, context, *db );
 
         time(&end);
         double dif = difftime (end,start);
@@ -89,7 +98,9 @@ try{
         std::cerr << dif << " seconds ellapsed" << std::endl;
         std::cerr.flush();
 
-        std::ofstream out("testout_fast");
+        std::string fname = cache.base() + std::string("testout");
+        std::ofstream out(fname.c_str());
+
         forest->Serialize(out);
 
         std::cerr << "Forest saved" << std::endl;
@@ -99,29 +110,26 @@ try{
     else if (argc>2){
         std::cout << "loading the forest ... " << std::endl;
 
-        std::ifstream in("testout");
+        std::ifstream in(argv[2]);
         forest = Forest<DepthFeature, ClassStats>::Deserialize(in);
 
         std::cerr << "Forest deserialized" << std::endl;
         std::cerr.flush();
 
-        train = db;
    }
 
-   test = train;
+    ClassStats clStatsPixel(db->classCount());
 
-    ClassificationDB *testascldb = dynamic_cast<ClassificationDB *>(test.get());
-
-    ClassStats clStatsPixel(testascldb->classCount());
-
-
-    double result = RFUtils::testClassificationForest<DepthFeature,ClassStats>(*forest,clStatsPixel,*test);
-
+    double result = RFUtils::testClassificationForest<DepthFeature,ClassStats>(*forest,clStatsPixel,*db,cache,true);
 
     std::cerr << "Error: " << result << std::endl;
 
     std::cerr << "Statistics computed" << std::endl;
     std::cerr.flush();
+
+    for(int i=0;i<db->classCount();i++){
+        std::cerr << db->labelIndex2Name(i) << "-" << (int)i << std::endl;
+    }
 
     }catch(std::exception &e){
         std::cerr << "exception caught 2: " << e.what() << std::endl;

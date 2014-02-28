@@ -18,3 +18,15 @@ void split(const std::string &str, const std::string &symbols, std::vector<std::
         result.push_back(str.substr(old));
     }
 }
+
+std::string replace_substr(const std::string &input, const std::string &toreplace, const std::string &replacewith)
+{
+    std::string tmp = input;
+    size_t pos = 0;
+    while((pos = tmp.find(toreplace,pos))!=std::string::npos){
+        tmp.replace(pos,toreplace.size(),replacewith);
+        pos+=replacewith.size();
+    }
+
+    return tmp;
+}

@@ -34,6 +34,7 @@ public:
     typedef unsigned short label_type;
 
     virtual label_type getNumericalLabel(DepthFileBasedImageDB::index_type i) const = 0;
+    virtual std::string labelIndex2Name(label_type label_idx) const = 0;
     virtual label_type classCount() const = 0;
 };
 
@@ -47,8 +48,8 @@ public:
 
     bool loadDB(const std::string &filename);
 
-    std::string labelIndex2Name(label_type label_idx){
-        for(std::map<std::string,label_type>::iterator itor = labels_.begin();
+    std::string labelIndex2Name(label_type label_idx) const{
+        for(std::map<std::string,label_type>::const_iterator itor = labels_.begin();
             itor!=labels_.end();itor++){
             if(itor->second == label_idx){
                 return itor->first;
@@ -107,6 +108,10 @@ public:
 
     label_type getNumericalLabel(index_type i) const{
         return dynamic_cast<ClassificationDB &>(source_).getNumericalLabel(subindex_[i]);
+    }
+
+    std::string labelIndex2Name(label_type label_idx) const{
+            return dynamic_cast<ClassificationDB &>(source_).labelIndex2Name(label_idx);
     }
 
     label_type classCount() const{

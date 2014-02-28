@@ -9,11 +9,16 @@ void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCol
 
     /*we suppose: voteClasses_ <= vote.size()*/
 
-    for(int i=0; i<voteClasses_; i++){
-        if (norm2(vote[i].x,vote[i].y) < dthreashold2_){
-            votes_[i].push_back(vote[i]);
+    try{
+        for(int i=0; i<voteClasses_; i++){
+            if (norm2(vote[i].x,vote[i].y) < dthreashold2_){
+                votes_[i].push_back(vote[i]);
+            }
         }
+    }catch(std::exception e){
+        std::cerr << "exception caught during aggregation: "<< e.what() << std::endl;
     }
+
 
     pointCount_++;
 
@@ -59,8 +64,8 @@ bool VotesStats::SerializeChar(std::ostream &stream) const
         vsize = votes_[i].size();
         ss << vsize << std::endl;
 
-        for(int j=0; j<vsize; j++){
-            ss << votes_[i][j].x << ";" << votes_[i][j].y << std::endl;
+        for(voteVector::const_iterator j =  votes_[i].begin(); j!= votes_[i].end(); j++){
+            ss << (*j).x << ";" << (*j).y << std::endl;
         }
 
     }
@@ -80,9 +85,9 @@ bool VotesStats::Serialize(std::ostream &stream) const
     for(int i=0; i<voteClasses_;i++){
         vsize = votes_[i].size();
         stream.write((const char *)(&vsize),sizeof(unsigned int));
-        for(int j=0; j<vsize; j++){
-            stream.write((const char *)(&(votes_[i][j].x)),sizeof(votes_[i][j].x));
-            stream.write((const char *)(&(votes_[i][j].y)),sizeof(votes_[i][j].y));
+        for(voteVector::const_iterator j =  votes_[i].begin(); j!= votes_[i].end(); j++){
+            stream.write((const char *)(&((*j).x)),sizeof((*j).x));
+            stream.write((const char *)(&((*j).y)),sizeof((*j).y));
         }
     }
 
@@ -121,17 +126,17 @@ double VotesStats::VoteVariance() const
         /*compute mean*/
         mx=0;
         my=0;
-        for(int j=0; j<votes_[i].size(); j++){
-            mx += votes_[i][j].x;
-            my += votes_[i][j].y;
+        for(voteVector::const_iterator j =  votes_[i].begin(); j!= votes_[i].end(); j++){
+            mx += (*j).x;
+            my += (*j).y;
         }
         mx = mx/votes_[i].size();
         my = my/votes_[i].size();
 
         /*compute average distance*/
         d2=0;
-        for(int j=0; j<votes_[i].size(); j++){
-            d2+=norm2((double)(votes_[i][j].x-mx),(double)(votes_[i][j].y-my));
+        for(voteVector::const_iterator j =  votes_[i].begin(); j!= votes_[i].end(); j++){
+            d2+=norm2((double)((*j).x-mx),(double)((*j).y-my));
         }
 
         fulld2 += d2;

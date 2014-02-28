@@ -5,12 +5,13 @@
 #include "hough/depthdbwithvotes.h"
 
 #include <vector>
+#include <list>
 
 #define ENABLE_OVERFLOW_CHECKS
 
 class VotesStats
 {
-    typedef std::vector<cv::Point2i> voteVector;
+    typedef std::list<cv::Point2i> voteVector;
 public:
 
     typedef voteVector::const_iterator const_iterator;

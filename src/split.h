@@ -7,4 +7,6 @@
 
 void split(const std::string &str, const std::string &symbols, std::vector<std::string> &result);
 
+std::string replace_substr(const std::string &input, const std::string &toreplace, const std::string &replacewith);
+
 #endif

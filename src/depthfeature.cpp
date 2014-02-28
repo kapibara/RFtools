@@ -7,7 +7,7 @@
 DepthFeatureFactory::DepthFeatureFactory()
 {
     uvlimit_ = 10;
-    zeroplane_ = 200;
+    zeroplane_ = 400;
 }
 
 DepthFeature DepthFeatureFactory::getDepthFeature(MicrosoftResearch::Cambridge::Sherwood::Random &random){

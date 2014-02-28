@@ -16,6 +16,7 @@ set(HOUGH_HEADERS ${H_FOLDER}/houghtrainingcontext.h /
                   ${H_FOLDER}/houghvotesstats.h  )
 
 set(GENERAL_HEADERS /
+            localcache.h /
             depthfeature.h /
             parameter.h /
             arraylist.h /
@@ -35,6 +36,7 @@ set(HOUGH_SOURCE ${H_FOLDER}/houghtrainingcontext.cpp /
                  ${H_FOLDER}/houghvotesstats.cpp)
 
 set(GENERAL_SOURCE  /
+                    localcache.cpp /
                     depthfeature.cpp /
                     parameter.cpp /
                     arraylist.cpp/
@@ -59,9 +61,10 @@ set(FOREST ${Forest_DIR}/Forest.h /
 add_executable(${EXECCL} main_cl.cpp ${CL_SOURCE} ${CL_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
 add_executable(${EXECH} main_h.cpp ${HOUGH_SOURCE} ${HOUGH_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
 
+message("boost libs: ${Boost_LIBS}")
 
-target_link_libraries(${EXECCL} ${OpenCV_LIBS})
-target_link_libraries(${EXECH} ${OpenCV_LIBS})
+target_link_libraries(${EXECCL} ${OpenCV_LIBS} ${Boost_LIBS})
+target_link_libraries(${EXECH} ${OpenCV_LIBS} ${Boost_LIBS})
 
 install(TARGETS ${EXECCL} DESTINATION .)
 install(TARGETS ${EXECH} DESTINATION .)

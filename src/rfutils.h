@@ -5,6 +5,9 @@
 #include <Random.h>
 #include "depthimagedb.h"
 #include "classification/depthdb.h"
+#include "localcache.h"
+#include "string2number.hpp"
+#include "classification/imagepixelstats.h"
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 
@@ -47,10 +50,24 @@ public:
         test.reset(new OutputDB(db,test_ind));
     }
 
+
     template<class F,class S>
-    static double testClassificationForest(Forest<F, S> &forest,
+    static bool serializeLeafs(std::ostream &stream, Tree<F,S> &tree)
+    {
+        int count = 0;
+        for(int i=0; i< tree.NodeCount(); i++){
+            if (tree.GetNode(i).IsLeaf()){
+                tree.GetNode(i).Serialize(stream);
+                count++;
+            }
+        }
+        std::cout << count << " leafs serialized" << std::endl;
+    }
+
+    template<class F,class S>
+    static double testClassificationForest(Forest<F,S> &forest,
                                            S instance,
-                                           DepthFileBasedImageDB &test)
+                                           DepthFileBasedImageDB &test, LocalCache &cache, bool saveBad)
     {
         std::vector<std::vector<int> > leafIndicesPerTree;
 
@@ -59,21 +76,35 @@ public:
         std::cerr << "forest applied" << std::endl;
 
         S stats = instance;
+        std::vector<ImagePixelStats> perImageStatsImg(test.imageCount());
         std::vector<S> perImageStats(test.imageCount(),instance);
+        std::vector<cv::Point2i> badPixels(test.imageCount());
+        cv::Point2i p;
+        std::string stubname;
 
         for(int i=0; i<test.Count(); i++)
         {
 
             stats.Clear();
+            test.getDataPoint(i,stubname,p);
 
             for(int t=0; t< forest.TreeCount(); t++)
             {
-                if(leafIndicesPerTree[t][i]>0)
+
+                if(leafIndicesPerTree[t][i]>0){
 
                     stats.Aggregate(forest.GetTree(t).GetNode(leafIndicesPerTree[t][i]).TrainingDataStatistics);
+
+                    if(!forest.GetTree(t).GetNode(leafIndicesPerTree[t][i]).IsLeaf()){
+                        std::cerr << "bad leafIndicesPerTree;" << std::endl;
+                    }
+                }
             }
 
-            perImageStats[test.getImageIdx(i)].Aggregate(stats.ClassDecision());
+            if(stats.SampleCount()>0){
+                perImageStatsImg[test.getImageIdx(i)].Aggregate(p,stats);
+                perImageStats[test.getImageIdx(i)].Aggregate(stats.ClassDecision());
+            }
 
         }
 
@@ -82,6 +113,8 @@ public:
         double result = 0;
         ClassificationDB &testcl = dynamic_cast<ClassificationDB &>(test);
         std::vector<bool> seen(test.imageCount(),false);
+        std::string filename;
+        std::ofstream stream;
 
         for(int i=0; i< seen.size(); i++){
             seen[i] = false;
@@ -92,15 +125,20 @@ public:
         {
  //           std::cerr<< "image index" << test.getImageIdx(i) << std::endl;
             if(!seen[test.getImageIdx(i)]){
-                std::cerr << "not seen:" << test.getImageIdx(i) << std::endl;
-                if(testcl.getNumericalLabel(i)!= perImageStats[test.getImageIdx(i)].ClassDecision()){
-                    std::cerr << "false decision" << std::endl;
-                    std::cerr << "gt: " << testcl.getNumericalLabel(i)
-                              << "per im stats: " <<  (int)perImageStats[test.getImageIdx(i)].ClassDecision()
-                              << std::endl;
-                   result+=1;//increase error count;
-                }
                 seen[test.getImageIdx(i)] = true;
+
+                if(saveBad){
+                    filename = cache.base() +
+                               testcl.labelIndex2Name(testcl.getNumericalLabel(i)) +
+                               num2str<int>(i);
+                    stream.open(filename.c_str(),std::ios_base::binary);
+                    perImageStatsImg[test.getImageIdx(i)].Serialize(stream);
+                    stream.close();
+                    perImageStatsImg[test.getImageIdx(i)].Serialize(filename+".png");
+                }
+                 if(testcl.getNumericalLabel(i)!= perImageStats[test.getImageIdx(i)].ClassDecision()){
+                    result+=1;//increase error count;
+                }
             }
         }
 
@@ -108,6 +146,7 @@ public:
 
         return result/test.imageCount();
     }
+
 };
 
 #endif // RFUTILS_H
