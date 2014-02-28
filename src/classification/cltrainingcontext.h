@@ -33,6 +33,10 @@ public:
 
         unsigned int nTotalSamples = l.SampleCount()+r.SampleCount();
 
+        if( (l.SampleCount()+r.SampleCount())!= p.SampleCount()){
+            std::cerr << "error: different sample count values" << std::endl;
+        }
+
         if (nTotalSamples <= 1)
           return 0.0;
 
@@ -43,9 +47,13 @@ public:
 
     virtual bool ShouldTerminate(const ClassStats& parent, const ClassStats& leftChild, const ClassStats& rightChild, double gain)
     {
-        std::cerr << "gain: " << gain << std::endl;
-
-        return (gain < 0.01) | (leftChild.SampleCount()<200)|(rightChild.SampleCount()<200);
+        bool result = (gain < 0.01) | (leftChild.SampleCount()<200)|(rightChild.SampleCount()<200);
+        if (result){
+            std::cerr << "gain: " << gain << std::endl;
+            std::cerr << "left child stats: " << leftChild.SampleCount() << std::endl;
+            std::cerr << "right child stats:" << rightChild.SampleCount() << std::endl;
+        }
+        return result;
     }
 
 private:

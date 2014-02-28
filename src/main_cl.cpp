@@ -30,12 +30,14 @@ using namespace MicrosoftResearch::Cambridge::Sherwood;
 int main(int argc, char **argv)
 {
 
+
+
 if (argc<2){
     std::cout << "exec <db file>" << std::endl;
     exit(-1);
 }
 
-LocalCache cache(argc,argv,"/home/kuznetso/tmp");
+LocalCache cache("DepthCL","/home/kuznetso/tmp");
 
 if(!cache.init()){
     std::cerr << "failed to initialize temporary directory" << std::endl;
@@ -48,9 +50,11 @@ try{
    std::auto_ptr<Forest<DepthFeature, ClassStats> > forest;
 
    DepthDBClassImage * db = new DepthDBClassImage();
-   DepthFileBasedImageDB *test;
-   DepthFileBasedImageDB *train;
+   std::auto_ptr<DepthDBSubindex> test;
+   std::auto_ptr<DepthDBSubindex> train;
    Random  random;
+
+   log << "input file: " << argv[1] << std::endl;
 
    db->loadDB(argv[1]);
 
@@ -66,9 +70,9 @@ try{
 
 
         Parameter<int> T(1, "No. of trees in the forest.");
-        Parameter<int> D(18, "Maximum tree levels.");
-        Parameter<int> F(100, "No. of candidate feature response functions per split node.");
-        Parameter<int> L(10, "No. of candidate thresholds per feature response function.");
+        Parameter<int> D(2, "Maximum tree levels.");
+        Parameter<int> F(200, "No. of candidate feature response functions per split node.");
+        Parameter<int> L(20, "No. of candidate thresholds per feature response function.");
         Parameter<bool> verbose(true,"Enables verbose progress indication.");
 
         log << "Parameters" << std::endl;
@@ -83,22 +87,26 @@ try{
 
         log << "class count: "  << db->classCount() << " element count: " << db->Count()<<std::endl;
 
-        DepthFeatureFactory factory;
+        DepthFeatureParameters param;
+        param.uvlimit_ = 25;
+        param.zeroplane_ = 300;
+        DepthFeatureFactory factory(param);
         ClTrainingContext context(db->classCount(),factory);
+
+        log << param;
 
         log << "start forest training ... " << std::endl;
 
         time_t start,end;
+        ProgressStream ps(log,Verbose);
 
         time(&start);
 
         forest = ForestTrainer<DepthFeature, ClassStats>::TrainForest (
-                random, trainingParameters, context, *train, ProgressStream(log,Verbosity::Verbose) );
+                random, trainingParameters, context, *train, &ps );
 
         time(&end);
         double dif = difftime (end,start);
-
-
 
         log << "Forest trained: " << forest->GetTree(0).NodeCount() << std::endl;
         log << "Time: " << dif << std::endl;
@@ -107,6 +115,8 @@ try{
         std::ofstream out(fname.c_str());
 
         forest->Serialize(out);
+
+        out.close();
 
         log << "Forest saved" << std::endl;
 
@@ -123,7 +133,7 @@ try{
 
     ClassStats clStatsPixel(db->classCount());
 
-    double result = RFUtils::testClassificationForest<DepthFeature,ClassStats>(*forest,clStatsPixel,*db,cache,true);
+    double result = RFUtils::testClassificationForest<DepthFeature,ClassStats>(*forest,clStatsPixel,*test,cache,true);
 
     log << "Error: " << result << std::endl;
 

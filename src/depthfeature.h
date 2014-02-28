@@ -10,18 +10,32 @@
 class DepthFeature;
 
 
+struct DepthFeatureParameters{
+
+    friend std::ostream & operator<<(std::ostream &os, const DepthFeatureParameters& p){
+        os << "UV limit: " << p.uvlimit_ << std::endl
+           << "Zero plane: " << p.zeroplane_ << std::endl;
+    }
+
+    DepthFeatureParameters(){
+        uvlimit_ = 45;
+        zeroplane_ = 300;
+    }
+
+    unsigned int uvlimit_;
+    unsigned short zeroplane_;
+};
+
 class DepthFeatureFactory{
 public:
-    DepthFeatureFactory();
+    DepthFeatureFactory(const DepthFeatureParameters &param = DepthFeatureParameters());
 
     DepthFeature getDepthFeature(MicrosoftResearch::Cambridge::Sherwood::Random &random);
 
-    void setUVLimit(int UVLimit) {uvlimit_ = UVLimit;}
-    void setZeroPlane(unsigned short zeroPlane) {zeroplane_ = zeroPlane;}
+    void setParameters(const DepthFeatureParameters &params) {param_ = params;}
 
 private:
-    int uvlimit_;
-    unsigned short zeroplane_;
+    DepthFeatureParameters param_;
 };
 
 /*standard depth feature*/
@@ -64,6 +78,10 @@ private:
 
     static float NaN(){
         return 1e5;
+    }
+
+    static float bg(){
+        return 200;
     }
 
     cv::Point2i u_,v_;

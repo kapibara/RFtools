@@ -46,10 +46,15 @@ bool ImagePixelStats::Serialize(const std::string &filename) const{
     for(pToStatsMap::const_iterator itor = pixels_.begin(); itor!=pixels_.end(); itor++){
         out.at<cv::Vec3b>((itor->first).x-minx+1,(itor->first).y-miny+1)=toColor((itor->second).ClassDecision());
     }
+    bool result;
 
-    cv::imwrite(filename,out);
+    if(!(result = cv::imwrite(filename,out))){
+        std::cerr << "could not save png..." << std::endl;
+    }
 
-    return true;
+    std::cerr << "result: " << result << std::endl;
+
+    return result;
 }
 
 cv::Vec3b ImagePixelStats::toColor(unsigned short val) const {

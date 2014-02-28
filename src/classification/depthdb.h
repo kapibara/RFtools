@@ -99,11 +99,11 @@ public:
     }
 
     bool getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate){
-        return source_.getDataPoint(i,file,coordinate);
+        return source_.getDataPoint(subindex_[i],file,coordinate);
     }
 
     bool getDataPoint(index_type i, cv::Mat &img, cv::Point2i &coordinate){
-        return ((DepthImageDB &)source_).getDataPoint(i,img,coordinate);
+        return source_.getDataPoint(subindex_[i],img,coordinate);
     }
 
     label_type getNumericalLabel(index_type i) const{

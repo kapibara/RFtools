@@ -11,12 +11,14 @@
 
 namespace bfs = boost::filesystem;
 
-LocalCache::LocalCache(int argc, char **argv, const std::string &localtmpdir)
+
+LocalCache::LocalCache(const std::string &name, const std::string &localtmpdir)
 {
+
     localtmpdir_ = replace_substr(localtmpdir,"\\" , "/");
 
     std::vector<std::string> buffer;
-    split(std::string(argv[0]),"\\/",buffer);
+    split(std::string(name),"\\/",buffer);
 
     if(buffer.size()>0){
         progName_ = buffer[buffer.size()-1];
@@ -34,11 +36,18 @@ LocalCache::LocalCache(int argc, char **argv, const std::string &localtmpdir)
             throw std::invalid_argument("set temporary cache directory; HOME variable is not set or invalid");
         }
     }
+
 }
 
 LocalCache::~LocalCache()
 {
     log_.close();
+    for(int i=0; i<openStreams_.size(); i++){
+        if((openStreams_[i])->is_open()){
+            (openStreams_[i])->close();
+            delete openStreams_[i];
+        }
+    }
 }
 
 bool LocalCache::init(){
@@ -57,12 +66,12 @@ bool LocalCache::init(){
 
      base_ = base_+"/"; //boost bag :) -> false returning value in presence of "/" in the end of the string
 
-     log_.open(base_+"log.txt");
+     log_.open((base_+"log.txt").c_str());
 
      return result;
 }
 
-std::ostream &log()
+std::ostream &LocalCache::log()
 {
     return log_;
 }

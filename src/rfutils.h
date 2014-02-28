@@ -18,8 +18,8 @@ public:
     template<class OutputDB,class OutputDBPClass>
     static void splitRandom(Random &random,
                             DepthFileBasedImageDB &db,
-                            OutputDBPClass *train,
-                            OutputDBPClass *test)
+                            std::auto_ptr<OutputDB> &train,
+                            std::auto_ptr<OutputDB> &test)
     {
         std::vector<DepthFileBasedImageDB::index_type> train_ind;
         std::vector<DepthFileBasedImageDB::index_type> test_ind;
@@ -67,18 +67,18 @@ public:
     template<class F,class S>
     static double testClassificationForest(Forest<F,S> &forest,
                                            S instance,
-                                           DepthFileBasedImageDB &test, LocalCache &cache, bool saveBad)
+                                           DepthFileBasedImageDB &test, LocalCache &cache, bool save)
     {
         std::vector<std::vector<int> > leafIndicesPerTree;
 
         forest.Apply(test, leafIndicesPerTree);
 
-        std::cerr << "forest applied" << std::endl;
+        cache.log() << "forest applied" << std::endl;
+
 
         S stats = instance;
         std::vector<ImagePixelStats> perImageStatsImg(test.imageCount());
         std::vector<S> perImageStats(test.imageCount(),instance);
-        std::vector<cv::Point2i> badPixels(test.imageCount());
         cv::Point2i p;
         std::string stubname;
 
@@ -91,12 +91,13 @@ public:
             for(int t=0; t< forest.TreeCount(); t++)
             {
 
+
                 if(leafIndicesPerTree[t][i]>0){
 
                     stats.Aggregate(forest.GetTree(t).GetNode(leafIndicesPerTree[t][i]).TrainingDataStatistics);
 
                     if(!forest.GetTree(t).GetNode(leafIndicesPerTree[t][i]).IsLeaf()){
-                        std::cerr << "bad leafIndicesPerTree;" << std::endl;
+                        cache.log() << "bad leafIndicesPerTree;" << std::endl;
                     }
                 }
             }
@@ -108,33 +109,31 @@ public:
 
         }
 
-        std::cerr << "statistics collected" << std::endl;
+        cache.log() << "statistics collected" << std::endl;
 
         double result = 0;
         ClassificationDB &testcl = dynamic_cast<ClassificationDB &>(test);
         std::vector<bool> seen(test.imageCount(),false);
         std::string filename;
-        std::ofstream stream;
+        std::ofstream *stream;
 
         for(int i=0; i< seen.size(); i++){
             seen[i] = false;
         }
-        std::cerr << "computing statistics for :" << test.imageCount() << std::endl;
+        cache.log() << "computing statistics for :" << test.imageCount() << std::endl;
 
         for(int i=0; i<test.Count(); i++)
         {
- //           std::cerr<< "image index" << test.getImageIdx(i) << std::endl;
             if(!seen[test.getImageIdx(i)]){
                 seen[test.getImageIdx(i)] = true;
 
-                if(saveBad){
-                    filename = cache.base() +
-                               testcl.labelIndex2Name(testcl.getNumericalLabel(i)) +
+                if(save){
+                    filename = testcl.labelIndex2Name(testcl.getNumericalLabel(i)) +
                                num2str<int>(i);
-                    stream.open(filename.c_str(),std::ios_base::binary);
-                    perImageStatsImg[test.getImageIdx(i)].Serialize(stream);
-                    stream.close();
-                    perImageStatsImg[test.getImageIdx(i)].Serialize(filename+".png");
+                    stream = (std::ofstream *)&cache.openBinStream(filename);
+                    perImageStatsImg[test.getImageIdx(i)].Serialize(*stream);
+                    stream->close(); //not to have too many of them opened
+                    perImageStatsImg[test.getImageIdx(i)].Serialize(cache.base() + filename+".png");
                 }
                  if(testcl.getNumericalLabel(i)!= perImageStats[test.getImageIdx(i)].ClassDecision()){
                     result+=1;//increase error count;
@@ -142,7 +141,7 @@ public:
             }
         }
 
-        std::cerr << "error computed" << std::endl;
+        cache.log() << "error computed" << std::endl;
 
         return result/test.imageCount();
     }

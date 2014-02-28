@@ -40,11 +40,42 @@ class DepthFileBasedImageDB: public DepthImageDB
 public:
     typedef unsigned short fileindex_type;
     virtual bool getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate) = 0;
+    virtual bool getDataPoint(index_type i, cv::Mat &img, cv::Point2i &coordinate) = 0;
     virtual fileindex_type getImageIdx(index_type i) const = 0;
     virtual std::string imageIdx2Filename(fileindex_type i) const = 0;
     virtual fileindex_type imageCount() const = 0;
     virtual unsigned int clearCacheCallCount() = 0;
 };
+
+/*simple cache
+class Cache
+{
+public:
+    typedef unsigned short fileindex_type;
+
+    Cache()
+    {
+        cachCallCount_ = 0;
+        previous_ = -1;
+    }
+
+    bool addToCache(const std::string &file);
+
+    cv::Mat &getImage();
+
+    fileindex_type imageCount()
+    {
+        return files_.size();
+    }
+
+    unsigned int clearCacheCallCount();
+
+private:
+    std::vector<std::string> files_;
+    unsigned int cachCallCount_;
+    cv::Mat cached_;
+    fileindex_type previous_;
+};*/
 
 
 class DepthFileBasedImageDBImpl: public DepthFileBasedImageDB
