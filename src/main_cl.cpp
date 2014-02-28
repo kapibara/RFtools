@@ -39,6 +39,8 @@ if(!cache.init()){
     exit(-1);
 }
 
+std::ostream &log = cache.log();
+
 try{
    std::auto_ptr<Forest<DepthFeature, ClassStats> > forest;
 
@@ -51,20 +53,23 @@ try{
    db->loadDB(argv[1]);
 
    if (argc==2){
-        std::cout << "starting training ... " << std::endl;
+        log << "starting training ... " << std::endl;
         RFUtils::splitRandom<DepthDBSubindex ,DepthFileBasedImageDB>(random,*db,train,test);
 
-        std::cout << "Train samples:" << train->Count() << std::endl;
-        std::cout << "Test samples:" << test->Count() << std::endl;
+        log << "Train samples:" << train->Count() << std::endl;
+        log << "Test samples:" << test->Count() << std::endl;
 
-        std::cerr << "db loaded ... " << std::endl;
-        std::cerr.flush();
+        log << "db loaded ... " << std::endl;
+
 
         Parameter<int> T(1, "No. of trees in the forest.");
         Parameter<int> D(2, "Maximum tree levels.");
         Parameter<int> F(100, "No. of candidate feature response functions per split node.");
         Parameter<int> L(10, "No. of candidate thresholds per feature response function.");
         Parameter<bool> verbose(true,"Enables verbose progress indication.");
+
+        log << "Parameters" << std::endl;
+        log << T << ";" << D << ";" << F << ";" << L << std::endl;
 
         TrainingParameters trainingParameters;
         trainingParameters.MaxDecisionLevels = D.value()-1;
@@ -73,35 +78,31 @@ try{
         trainingParameters.NumberOfTrees = T.value();
         trainingParameters.Verbose = verbose.value();
 
-        std::cerr <<"class count: "  << db->classCount() << " element count: " << db->Count()<<std::endl;
+        log << "class count: "  << db->classCount() << " element count: " << db->Count()<<std::endl;
 
         DepthFeatureFactory factory;
         ClTrainingContext<DepthFeature, ClassStats> context(db->classCount(),factory);
 
-        std::cerr << "start forest training ... " << std::endl;
-        std::cerr.flush();
+        log << "start forest training ... " << std::endl;
 
         forest = ForestTrainer<DepthFeature, ClassStats>::TrainForest (
-                random, trainingParameters, context, *train );
+                random, trainingParameters, context, *train, ProgressStream(log,Verbosity::Verbose) );
 
-        std::cerr << "Forest trained: " << forest->GetTree(0).NodeCount() << std::endl;
-        std::cerr.flush();
+        log << "Forest trained: " << forest->GetTree(0).NodeCount() << std::endl;
 
         std::ofstream out(cache.base() + std::string("testout"));
         forest->Serialize(out);
 
-        std::cerr << "Forest saved" << std::endl;
-        std::cerr.flush();
+        log << "Forest saved" << std::endl;
 
     }
     else if (argc>2){
-        std::cout << "loading the forest ... " << std::endl;
+        log << "loading the forest ... " << std::endl;
 
         std::ifstream in("testout");
         forest = Forest<DepthFeature, ClassStats>::Deserialize(in);
 
-        std::cerr << "Forest deserialized" << std::endl;
-        std::cerr.flush();
+        log << "Forest deserialized" << std::endl;
 
         test = db;
    }
@@ -112,13 +113,11 @@ try{
 
     double result = RFUtils::testClassificationForest<DepthFeature,ClassStats>(*forest,clStatsPixel,*test,cache,true);
 
-    std::cerr << "Error: " << result << std::endl;
+    log << "Error: " << result << std::endl;
 
-    std::cerr << "Statistics computed" << std::endl;
-    std::cerr.flush();
+    log << "Statistics computed" << std::endl;
 
     }catch(std::exception &e){
-        std::cerr << "exception caught 2: " << e.what() << std::endl;
-        std::cerr.flush();
+        log << "exception caught 2: " << e.what() << std::endl;
     }
 }

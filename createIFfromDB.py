@@ -1,16 +1,22 @@
 import os
 import glob
 import cv2
+import re
 
-def createIF(inputpath, foutputfile):
+def createIF(inputpath, foutputfile, classes = 'a-z'):
     letters = os.listdir(inputpath)
 
     out = open(foutputfile, 'w')
     fc = 0
 
+    pattern = '^[' + classes + ']'
+
+    lmatcher = re.compile(pattern)
+
     for l in letters:
 
-        files = glob.glob(inputpath + '/' + l + '/imDepthOrig*')
+        if lmatcher.match(l):
+            files = glob.glob(inputpath + '/' + l + '/imDepthOrig*')
 
         for f in files:
 
@@ -33,17 +39,23 @@ def createIF(inputpath, foutputfile):
 
     print 'files read: {0}'.format(fc)
 
-def createMaskedIF(inputpath, foutputfile):
+def createMaskedIF(inputpath, foutputfile, cl = 'a-z', maximcount = 100000):
     letters = os.listdir(inputpath)
+
+    pattern = '^[' + cl + ']'
+
+    lmatcher = re.compile(pattern)
 
     out = open(foutputfile, 'w')
     fc = 0
 
     for l in letters:
 
-#        if (l=='m') or (l=='n'):
-
+        if lmatcher.match(l):
             files = glob.glob(inputpath + '/' + l + '/imDepthOrig*')
+
+            if len(files) > maximcount:
+                files = files[0:maximcount]
 
             for f in files:
                 maskname = f.replace('imDepthOrig','imDepthMask')
