@@ -13,6 +13,10 @@ def createIF(inputpath, foutputfile, classes = 'a-z'):
     
     lmatcher = re.compile(pattern)
 
+    pattern = '^[' + classes + ']'
+
+    lmatcher = re.compile(pattern)
+
     for l in letters:
       
         if lmatcher.match(l):
@@ -47,6 +51,10 @@ def createMaskedIF(inputpath, foutputfile, cl = 'a-z', maximcount = 100000):
     
     lmatcher = re.compile(pattern)
 
+    pattern = '^[' + cl + ']'
+
+    lmatcher = re.compile(pattern)
+
     out = open(foutputfile, 'w')
     fc = 0
 
@@ -55,6 +63,9 @@ def createMaskedIF(inputpath, foutputfile, cl = 'a-z', maximcount = 100000):
         if lmatcher.match(l):
             files = glob.glob(inputpath + '/' + l + '/imDepthOrig*')
             
+            if len(files) > maximcount:
+                files = files[0:maximcount]
+
             if len(files) > maximcount:
                 files = files[0:maximcount]
 

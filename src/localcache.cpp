@@ -36,6 +36,11 @@ LocalCache::LocalCache(int argc, char **argv, const std::string &localtmpdir)
     }
 }
 
+LocalCache::~LocalCache()
+{
+    log_.close();
+}
+
 bool LocalCache::init(){
      time_t now;
      struct tm * timeinfo;
@@ -52,7 +57,14 @@ bool LocalCache::init(){
 
      base_ = base_+"/"; //boost bag :) -> false returning value in presence of "/" in the end of the string
 
+     log_.open(base_+"log.txt");
+
      return result;
+}
+
+std::ostream &log()
+{
+    return log_;
 }
 
 bool LocalCache::createDir(const std::string &name){

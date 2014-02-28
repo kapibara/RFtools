@@ -18,8 +18,8 @@ public:
     template<class OutputDB,class OutputDBPClass>
     static void splitRandom(Random &random,
                             DepthFileBasedImageDB &db,
-                            std::auto_ptr<OutputDBPClass> &train,
-                            std::auto_ptr<OutputDBPClass> &test)
+                            OutputDBPClass *train,
+                            OutputDBPClass *test)
     {
         std::vector<DepthFileBasedImageDB::index_type> train_ind;
         std::vector<DepthFileBasedImageDB::index_type> test_ind;
