@@ -24,14 +24,35 @@
 #include <time.h>
 #include "split.h"
 
+#include "classification/testclassificationforest.h"
+
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 
 int main(int argc, char **argv)
 {
+    TestClassificationForest tester;
+    DepthDBClassImage db;
+    db.loadDB(argv[1]);
 
+    ExtendedTrainingParameters params;
+    params.paramForest_.NumberOfCandidateThresholdsPerFeature = 20;
+    params.paramForest_.NumberOfTrees = 1;
 
+    for(int d = 10; d<20; d+=4){
+        params.paramForest_.MaxDecisionLevels = d-1;
+        for (int uv = 10; uv < 80; uv += 10){
+            params.paramFeatures_.uvlimit_ = uv;
+            for (int f = 200; f < 1000; f += 100){
+                params.paramForest_.NumberOfCandidateFeatures = f;
+                tester.addParameterSet(params);
+            }
+        }
+    }
 
+    tester.test(db);
+
+/*
 if (argc<2){
     std::cout << "exec <db file>" << std::endl;
     exit(-1);
@@ -145,5 +166,5 @@ try{
 
     }catch(std::exception &e){
         log << "exception caught 2: " << e.what() << std::endl;
-    }
+    }*/
 }

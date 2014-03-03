@@ -17,7 +17,7 @@ void TestClassificationForest::addParameterSet(const ExtendedTrainingParameters 
     params_.push_back(param);
 }
 
-void TestClassificationForest::test(DepthDBClassImage *db)
+void TestClassificationForest::test(DepthDBClassImage &db)
 {
     std::auto_ptr<Forest<DepthFeature, ClassStats> > forest;
     std::auto_ptr<DepthDBSubindex> test;
@@ -27,6 +27,7 @@ void TestClassificationForest::test(DepthDBClassImage *db)
     time_t start,end;
 
     for(int i=0; i< params_.size(); i++){
+        try{
         LocalCache cache("TestClassificationForest","/home/kuznetso/tmp");
         cache.init();
 
@@ -34,17 +35,16 @@ void TestClassificationForest::test(DepthDBClassImage *db)
 
         log << params_[i];
 
-        RFUtils::splitRandom<DepthDBSubindex ,DepthFileBasedImageDB>(random,*db,train,test);
+        RFUtils::splitRandom<DepthDBSubindex ,DepthFileBasedImageDB>(random,db,train,test);
 
         log << "Train samples: " << train->Count() << std::endl;
         log << "Test samples: " << test->Count() << std::endl;
 
         DepthFeatureFactory factory(params_[i].paramFeatures_);
-        ClTrainingContext context(db->classCount(),factory);
+        ClTrainingContext context(db.classCount(),factory);
 
         log << "start forest training ... " << std::endl;
 
-        time_t start,end;
         ProgressStream ps(log,Verbose);
 
         time(&start);
@@ -62,7 +62,7 @@ void TestClassificationForest::test(DepthDBClassImage *db)
 
         log << "Forest saved" << std::endl;
 
-        ClassStats clStatsPixel(db->classCount());
+        ClassStats clStatsPixel(db.classCount());
 
         result = RFUtils::testClassificationForest<DepthFeature,ClassStats>
                 (*forest,clStatsPixel,*train,cache,false);
@@ -74,8 +74,11 @@ void TestClassificationForest::test(DepthDBClassImage *db)
 
         log << "Test error: " << result << std::endl;
 
-        for(int i=0;i<db->classCount();i++){
-            log << db->labelIndex2Name(i) << "-" << (int)i << std::endl;
+        for(int i=0;i<db.classCount();i++){
+            log << db.labelIndex2Name(i) << "-" << (int)i << std::endl;
+        }
+        }catch(std::exception &e){
+            std::cerr << "exception caught: " << e.what() << std::endl;
         }
 
     }

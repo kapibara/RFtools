@@ -40,7 +40,7 @@ public:
 
     void addParameterSet(const ExtendedTrainingParameters &param);
 
-    void test(DepthDBClassImage *db);
+    void test(DepthDBClassImage &db);
 
 private:
     std::vector<ExtendedTrainingParameters> params_;

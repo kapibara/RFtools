@@ -71,7 +71,9 @@ public:
     {
         std::vector<std::vector<int> > leafIndicesPerTree;
 
-        forest.Apply(test, leafIndicesPerTree);
+        ProgressStream ps(cache.log(),Verbose);
+
+        forest.Apply(test, leafIndicesPerTree, &ps);
 
         cache.log() << "forest applied" << std::endl;
 
