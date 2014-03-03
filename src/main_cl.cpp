@@ -43,7 +43,7 @@ int main(int argc, char **argv)
         params.paramForest_.MaxDecisionLevels = d-1;
         for (int uv = 10; uv < 80; uv += 10){
             params.paramFeatures_.uvlimit_ = uv;
-            for (int f = 200; f < 1000; f += 100){
+            for (int f = 200; f < 1000; f += 200){
                 params.paramForest_.NumberOfCandidateFeatures = f;
                 tester.addParameterSet(params);
             }

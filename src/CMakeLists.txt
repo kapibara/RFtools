@@ -71,6 +71,6 @@ target_link_libraries(${EXECCL} ${OpenCV_LIBS} ${Boost_LIBS})
 target_link_libraries(${EXECH} ${OpenCV_LIBS} ${Boost_LIBS})
 target_link_libraries(${TESTS} ${OpenCV_LIBS} ${Boost_LIBS})
 
-install(TARGETS ${EXECCL} DESTINATION .)
+#install(TARGETS ${EXECCL} DESTINATION .)
 install(TARGETS ${EXECH} DESTINATION .)
 install(TARGETS ${TESTS} DESTINATION .)

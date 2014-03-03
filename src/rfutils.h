@@ -15,7 +15,7 @@ class RFUtils
 {
 public:
 
-    template<class OutputDB,class OutputDBPClass>
+    template<class OutputDB>
     static void splitRandom(Random &random,
                             DepthFileBasedImageDB &db,
                             std::auto_ptr<OutputDB> &train,

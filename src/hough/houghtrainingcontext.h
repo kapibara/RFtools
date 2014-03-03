@@ -30,6 +30,7 @@ public:
         double lvv = leftChild.VoteVariance();
         double rvv = rightChild.VoteVariance();
 
+
         if(parent.Size() <=1){
             return 0;
         }
@@ -40,6 +41,13 @@ public:
 
     virtual bool ShouldTerminate(const VotesStats& parent, const VotesStats& leftChild, const VotesStats& rightChild, double gain)
     {
+        std::cerr << "vote variance: " << parent.VoteVariance() << std::endl;
+        std::cerr << "lvv: " << leftChild.VoteVariance() << std::endl;
+        std::cerr << "rvv: " << rightChild.VoteVariance() << std::endl;
+        std::cerr << "lsize: " << leftChild.Size() << std::endl;
+        std::cerr << "rsize: " << rightChild.Size() << std::endl;
+        std::cerr << "gain: " << gain << std::endl;
+
         return gain < 0.01;
     }
 

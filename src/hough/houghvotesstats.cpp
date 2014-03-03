@@ -109,6 +109,8 @@ bool HoughVotesStats::Serialize(const std::string &filename)
 bool HoughVotesStats::Serialize(std::ostream &out)
 {
     out.write((const char *)(&outOfBoundaries_),sizeof(outOfBoundaries_));
+    out.write((const char *)(&(gt_.x)),sizeof(gt_.x));
+    out.write((const char *)(&(gt_.y)),sizeof(gt_.y));
     out.write((const char *)(&mat_.cols),sizeof(mat_.cols));
     out.write((const char *)(&mat_.rows),sizeof(mat_.rows));
 

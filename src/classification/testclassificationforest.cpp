@@ -35,7 +35,7 @@ void TestClassificationForest::test(DepthDBClassImage &db)
 
         log << params_[i];
 
-        RFUtils::splitRandom<DepthDBSubindex ,DepthFileBasedImageDB>(random,db,train,test);
+        RFUtils::splitRandom<DepthDBSubindex>(random,db,train,test);
 
         log << "Train samples: " << train->Count() << std::endl;
         log << "Test samples: " << test->Count() << std::endl;

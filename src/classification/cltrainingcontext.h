@@ -48,11 +48,11 @@ public:
     virtual bool ShouldTerminate(const ClassStats& parent, const ClassStats& leftChild, const ClassStats& rightChild, double gain)
     {
         bool result = (gain < 0.01) | (leftChild.SampleCount()<200)|(rightChild.SampleCount()<200);
-        if (result){
+/*        if (result){
             std::cerr << "gain: " << gain << std::endl;
             std::cerr << "left child stats: " << leftChild.SampleCount() << std::endl;
             std::cerr << "right child stats:" << rightChild.SampleCount() << std::endl;
-        }
+        }*/
         return result;
     }
 

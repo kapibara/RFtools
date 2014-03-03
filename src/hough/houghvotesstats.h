@@ -23,6 +23,20 @@ public:
     bool Serialize(std::ostream &out);
     bool Serialize(const std::string &filename);
 
+    unsigned char voteClassCount()
+    {
+        return voteClass_;
+    }
+
+    unsigned int outOfBoundariesCount()
+    {
+        return outOfBoundaries_;
+    }
+
+    void setGT(const cv::Point2i &gt){
+        gt_ = gt;
+    }
+
 
 private:
 
@@ -30,6 +44,7 @@ private:
     unsigned char voteClass_;
 
     unsigned int outOfBoundaries_;
+    cv::Point2i gt_;
 };
 
 #endif // HOUGHVOTESSTATS_H
