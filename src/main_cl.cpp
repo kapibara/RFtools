@@ -26,6 +26,12 @@ using namespace MicrosoftResearch::Cambridge::Sherwood;
 
 int main(int argc, char **argv)
 {
+    for(int i=0; i<3; i++){
+        LocalCache cache(argc,argv);
+        cache.init();
+    }
+
+    exit(-1);
 
 if (argc<2){
     std::cout << "exec <db file>" << std::endl;
@@ -85,8 +91,10 @@ try{
 
         log << "start forest training ... " << std::endl;
 
+        ProgressStream progress(log,Verbosity::Verbose);
+
         forest = ForestTrainer<DepthFeature, ClassStats>::TrainForest (
-                random, trainingParameters, context, *train, ProgressStream(log,Verbosity::Verbose) );
+                random, trainingParameters, context, *train, &progress );
 
         log << "Forest trained: " << forest->GetTree(0).NodeCount() << std::endl;
 

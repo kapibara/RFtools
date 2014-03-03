@@ -13,6 +13,8 @@ namespace bfs = boost::filesystem;
 
 LocalCache::LocalCache(int argc, char **argv, const std::string &localtmpdir)
 {
+    std::cout << "LocalCache::LocalCache()" << std::endl;
+
     localtmpdir_ = replace_substr(localtmpdir,"\\" , "/");
 
     std::vector<std::string> buffer;
@@ -38,6 +40,8 @@ LocalCache::LocalCache(int argc, char **argv, const std::string &localtmpdir)
 
 LocalCache::~LocalCache()
 {
+    std::cout << "LocalCache::~LocalCache()" << std::endl;
+
     log_.close();
 }
 
@@ -62,7 +66,7 @@ bool LocalCache::init(){
      return result;
 }
 
-std::ostream &log()
+std::ostream &LocalCache::log()
 {
     return log_;
 }

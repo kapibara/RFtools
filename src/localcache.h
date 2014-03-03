@@ -2,6 +2,7 @@
 #define LOCALCACHE_H
 
 #include <string>
+#include <fstream>
 
 class LocalCache
 {

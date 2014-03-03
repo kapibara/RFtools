@@ -10,6 +10,7 @@ class Parameter
 
     friend std::ostream & operator<<(std::ostream &os, const Parameter<T>& p){
         os << p.desc_ << ":" << p.value_ << std::endl;
+        return os;
     }
 
 public:
