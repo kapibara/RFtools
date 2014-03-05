@@ -48,7 +48,7 @@ public:
 
     void Aggregate(const VotesStats& i);
 
-    element_count Size() const
+    element_count Count() const
     {
         return pointCount_;
     }

@@ -7,6 +7,7 @@ HoughVotesStats::HoughVotesStats(const cv::Size &s, unsigned char voteClass)
     Clear();
 }
 
+
 void HoughVotesStats::Aggregate(const HoughVotesStats &stats)
 {
     if(mat_.rows != stats.mat_.rows | mat_.cols != stats.mat_.cols){

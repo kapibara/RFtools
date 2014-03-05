@@ -31,24 +31,24 @@ public:
         double rvv = rightChild.VoteVariance();
 
 
-        if(parent.Size() <=1){
+        if(parent.Count() <=1){
             return 0;
         }
         /*computing parent.VoteVariance() is not optimal*/
 
-        return (parent.VoteVariance() - (((double)leftChild.Size())/parent.Size()*lvv +((double)rightChild.Size())/parent.Size()*rvv));
+        return (parent.VoteVariance() - (((double)leftChild.Count())/parent.Count()*lvv +((double)rightChild.Count())/parent.Count()*rvv));
     }
 
     virtual bool ShouldTerminate(const VotesStats& parent, const VotesStats& leftChild, const VotesStats& rightChild, double gain)
     {
-        std::cerr << "vote variance: " << parent.VoteVariance() << std::endl;
+     /*    std::cerr << "vote variance: " << parent.VoteVariance() << std::endl;
         std::cerr << "lvv: " << leftChild.VoteVariance() << std::endl;
         std::cerr << "rvv: " << rightChild.VoteVariance() << std::endl;
         std::cerr << "lsize: " << leftChild.Size() << std::endl;
         std::cerr << "rsize: " << rightChild.Size() << std::endl;
-        std::cerr << "gain: " << gain << std::endl;
+        std::cerr << "gain: " << gain << std::endl;*/
 
-        return gain < 0.01;
+        return gain < 0.01 | (leftChild.Count() < 100) | (rightChild.Count() < 100);
     }
 
 private:

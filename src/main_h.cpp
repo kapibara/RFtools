@@ -13,6 +13,7 @@
 #include "localcache.h"
 #include "TrainingParameters.h"
 #include "hough/houghtrainingcontext.h"
+#include "classification/classstats.h"
 #include "string2number.hpp"
 #include "rfutils.h"
 
@@ -52,16 +53,21 @@ int main(int argc, char **argv)
 
         RFUtils::splitRandom<DepthDBWithVotesSubindex>(random,db,train,test);
 
+        log << "train set size: " << train->Count() << std::endl;
+        log << "test set size: " << test->Count() << std::endl;
+
         if (argc<3){
 
             DepthFeatureParameters featureParams;
+            featureParams.uvlimit_ = 30;
+            featureParams.zeroplane_ = 300;
 
             log << featureParams;
 
             Parameter<int> T(1, "No. of trees in the forest.");
-            Parameter<int> D(5, "Maximum tree levels.");
-            Parameter<int> F(500, "No. of candidate feature response functions per split node.");
-            Parameter<int> L(10, "No. of candidate thresholds per feature response function.");
+            Parameter<int> D(8, "Maximum tree levels.");
+            Parameter<int> F(300, "No. of candidate feature response functions per split node.");
+            Parameter<int> L(20, "No. of candidate thresholds per feature response function.");
             Parameter<bool> verbose(true,"Enables verbose progress indication.");
 
             TrainingParameters trainingParameters;
@@ -71,13 +77,11 @@ int main(int argc, char **argv)
             trainingParameters.NumberOfTrees = T.value();
             trainingParameters.Verbose = verbose.value();
 
-        //log << trainingParameters;
-
             DepthFeatureFactory factory(featureParams);
             HoughTrainingContext<DepthFeature> context(train->voteClassCount(),factory);
 
             forest = ForestTrainer<DepthFeature, VotesStats>::TrainForest (
-                random, trainingParameters, context, *train ,&progress);
+                random, trainingParameters, context, db ,&progress);
 
             log << "forest trained" << std::endl;
 
@@ -103,12 +107,15 @@ int main(int argc, char **argv)
 
         std::vector< std::vector <HoughVotesStats> > fullStats;
 
-        for (int v = 0; v < train->voteClassCount(); v++){
-            HoughVotesStats instance(cv::Size(320,240),v);
-            fullStats.push_back(std::vector<HoughVotesStats>(test->imageCount(),instance));
+        for (int v = 0; v < test->voteClassCount(); v++){
+            fullStats.push_back(std::vector<HoughVotesStats>());
+            for(int i=0; i< test->imageCount(); i++){
+                fullStats.back().push_back(HoughVotesStats(cv::Size(240,320),v));
+            }
         }
 
         log << "full stats vector created" << std::endl;
+        log << "image count: " << test->imageCount() << std::endl;
 
         for(int i=0; i<test->Count(); i++){
             test->getDataPoint(i,tmpstr,current);
@@ -116,9 +123,11 @@ int main(int argc, char **argv)
             for(int t=0; t<forest->TreeCount(); t++)
             {
                 if (leafIndicesPerTree[t][i]>0)
+                    for(int v = 0; v < test->voteClassCount(); v++){
 
-                    for(int v = 0; v < test->voteClassCount(); v++)
                         fullStats[v][test->getImageIdx(i)].Aggregate(current,forest->GetTree(t).GetNode(leafIndicesPerTree[t][i]).TrainingDataStatistics);
+
+                    }
             }
         }
 
@@ -134,6 +143,10 @@ int main(int argc, char **argv)
             if(!seen[test->getImageIdx(i)])
             {
                 seen[test->getImageIdx(i)] = true;
+                log << "i: " << i <<
+                       "filename: " << test->imageIdx2Filename(test->getOriginalImageIdx(i)) <<
+                       "imindex: "  << std::endl;
+
                 test->getDataPointVote(i,votes);
                 test->getDataPoint(i,filename,p);
                 for(int v = 0; v < test->voteClassCount(); v++){
@@ -141,8 +154,8 @@ int main(int argc, char **argv)
                     filename = "img_" + num2str<int>(i)+ "_" + num2str<int>(v);
                     stream = (std::ofstream *)&cache.openBinStream(filename);
                     fullStats[v][test->getImageIdx(i)].Serialize(*stream);
+                    stream->close();
                     fullStats[v][test->getImageIdx(i)].Serialize(cache.base() + filename + std::string(".png"));
-
                 }
                 votes.clear();
             }
@@ -152,6 +165,7 @@ int main(int argc, char **argv)
 
 
     }catch(std::exception e){
-        std::cout << "exception caught" << e.what() << std::endl;
+        std::cerr << "exception caught" << e.what() << std::endl;
+        std::cerr.flush();
     }
 }

@@ -45,8 +45,8 @@ LocalCache::~LocalCache()
     for(int i=0; i<openStreams_.size(); i++){
         if((openStreams_[i])->is_open()){
             (openStreams_[i])->close();
-            delete openStreams_[i];
         }
+        delete openStreams_[i];
     }
 }
 

@@ -49,7 +49,9 @@ void VotesStats::Aggregate(const VotesStats& stats)
 void VotesStats::Compress()
 {
     /*radical solution*/
-    Clear();
+    for(int i=0 ; i < voteClasses_; i++){
+        votes_[i].clear();
+    }
 }
 
 bool VotesStats::SerializeChar(std::ostream &stream) const

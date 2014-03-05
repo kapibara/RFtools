@@ -37,7 +37,8 @@ set(CL_SOURCE ${CL_FOLDER}/depthdb.cpp /
 set(HOUGH_SOURCE ${H_FOLDER}/houghtrainingcontext.cpp /
                  ${H_FOLDER}/votesstats.cpp /
                  ${H_FOLDER}/depthdbwithvotes.cpp /
-                 ${H_FOLDER}/houghvotesstats.cpp)
+                 ${CL_FOLDER}/classstats.cpp /
+                 ${H_FOLDER}/houghvotesstats.cpp )
 
 set(GENERAL_SOURCE  /
                     localcache.cpp /
