@@ -15,6 +15,8 @@ struct DepthFeatureParameters{
     friend std::ostream & operator<<(std::ostream &os, const DepthFeatureParameters& p){
         os << "UV limit: " << p.uvlimit_ << std::endl
            << "Zero plane: " << p.zeroplane_ << std::endl;
+
+        return os;
     }
 
     DepthFeatureParameters(){

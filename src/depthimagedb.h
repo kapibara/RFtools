@@ -2,6 +2,9 @@
 #define DEPTHIMAGEDB_H
 
 #include <opencv2/opencv.hpp>
+
+#include <vector>
+
 #include "Interfaces.h"
 #include "arraylist.h"
 
@@ -48,18 +51,15 @@ public:
 };
 
 
+
 class Cache
 {
 public:
-    typedef unsigned short fileindex_type;
-
-    Cache()
-    {
-        cachCallCount_ = 0;
-        previous_ = -1;
+    unsigned int Count() const{
+        return subindex_.size();
     }
 
-    bool addToCache(const std::string &file);
+    void addToCache(const std::string &file);
 
     bool getImage(fileindex_type imgindex, cv::Mat &image);
 
@@ -79,6 +79,53 @@ private:
     unsigned int cachCallCount_;
     cv::Mat cached_;
     fileindex_type previous_;
+};
+
+class SubindexFileBasedImageDB: public DepthFileBasedImageDB
+    {
+    public:
+    SubindexFileBasedImageDB(DepthFileBasedImageDB &source, const std::vector<index_type> &subindex):
+        source_(source),subindex_(subindex)
+    {
+        for(int i=0; i<subindex_.size(); i++){
+            imageids_.insert(std::make_pair(source_.getImageIdx(subindex_[i]),imageids_.size()));
+        }
+    }
+
+    bool getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate){
+        return source_.getDataPoint(subindex_[i],file,coordinate);
+    }
+
+    bool getDataPoint(index_type i, cv::Mat &img, cv::Point2i &coordinate){
+        return source_.getDataPoint(subindex_[i],img,coordinate);
+    }
+
+    std::string imageIdx2Filename(fileindex_type i) const{
+       return source_.imageIdx2Filename(i);
+    }
+
+    fileindex_type imageCount() const{
+        return imageids_.size();
+    }
+
+    fileindex_type getOriginalImageIdx(index_type i) const {
+        return source_.getImageIdx(subindex_[i]);
+    }
+
+    fileindex_type getImageIdx(index_type i) const {
+        return imageids_.at(source_.getImageIdx(subindex_[i]));
+    }
+
+    unsigned int clearCacheCallCount(){
+        return source_.clearCacheCallCount();
+    }
+
+protected:
+    DepthFileBasedImageDB &source_;
+    std::vector<index_type> subindex_;
+
+private:
+    std::map<fileindex_type,fileindex_type> imageids_;
 };
 
 

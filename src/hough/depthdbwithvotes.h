@@ -33,14 +33,16 @@ private:
 class DepthDBWithVotes
 {
 public:
+    typedef unsigned char vote_class_count;
     virtual bool getDataPointVote(DepthFileBasedImageDB::index_type i, std::vector<cv::Point2i> &vote) = 0;
+    virtual vote_class_count voteClassCount() = 0;
 };
 
 class DepthDBWithVotesImpl: public DepthFileBasedImageDBImpl, public DepthDBWithVotes
 {
 public:
 
-    typedef unsigned char vote_class_count;
+
     DepthDBWithVotesImpl(const std::string &basepath="");
 
     bool loadDB(const std::string &filename);
@@ -58,6 +60,25 @@ private:
 
     vote_class_count voteClassCount_;
     std::vector<std::vector<cv::Point2i> > votes_; //stores joint locations for each image
+};
+
+class DepthDBWithVotesSubindex: public SubindexFileBasedImageDB, public DepthDBWithVotes
+{
+public:
+    DepthDBWithVotesSubindex(DepthFileBasedImageDB &source, const std::vector<index_type> &subindex):
+        SubindexFileBasedImageDB(source,subindex)
+    {
+
+    }
+
+    bool getDataPointVote(index_type i, std::vector<cv::Point2i> &vote){
+        return dynamic_cast<DepthDBWithVotes &>(source_).getDataPointVote(subindex_[i], vote);
+    }
+
+    vote_class_count voteClassCount(){
+        return dynamic_cast<DepthDBWithVotes &>(source_).voteClassCount();
+    }
+
 };
 
 #endif // DEPTHDBWITHVOTES_H

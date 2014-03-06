@@ -10,99 +10,162 @@
 #include "depthfeature.h"
 #include "hough/houghvotesstats.h"
 #include "parameter.h"
+#include "localcache.h"
 #include "TrainingParameters.h"
 #include "hough/houghtrainingcontext.h"
+#include "classification/classstats.h"
 #include "string2number.hpp"
+#include "rfutils.h"
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 
 int main(int argc, char **argv)
 {
 
+    std::cout << "starting the program" << std::endl;
 
-    if (argc<2){
-        std::cout << "exec <db file>" << std::endl;
+    LocalCache cache("DepthHOUGH","/home/kuznetso/tmp");
+
+    if(!cache.init()){
+        std::cerr << "failed to initialize temporary directory" << std::endl;
+        exit(-1);
     }
 
-    std::cout << "starting the program" << std::endl;
+    std::ostream &log = cache.log();
 
     try{
         DepthDBWithVotesImpl db;
         Random random;
-        std::vector<cv::Point2i> p;
+        ProgressStream progress(log,Verbose);
+        std::auto_ptr<Forest<DepthFeature, VotesStats> > forest;
+        std::auto_ptr<DepthDBWithVotesSubindex> test;
+        std::auto_ptr<DepthDBWithVotesSubindex> train;
 
+        if (argc<2){
+            std::cout << "exec <db file>" << std::endl;
+        }
 
         db.loadDB(argv[1]);
 
-        std::cout << "number of images: " << db.imageCount() << std::endl;
+        log << "number of images: " << db.imageCount() << std::endl;
+        log << "number of points: " << db.Count() << std::endl;
+        log << "number of vote classes: " << (int)db.voteClassCount() << std::endl;
 
-        std::cout << "number of points:" << db.Count() << std::endl;
-        std::cout << "number of vote classes: " << (int)db.voteClassCount() << std::endl;
+        RFUtils::splitRandom<DepthDBWithVotesSubindex>(random,db,train,test);
 
-        Parameter<int> T(1, "No. of trees in the forest.");
-        Parameter<int> D(5, "Maximum tree levels.");
-        Parameter<int> F(100, "No. of candidate feature response functions per split node.");
-        Parameter<int> L(10, "No. of candidate thresholds per feature response function.");
-        Parameter<bool> verbose(true,"Enables verbose progress indication.");
+        log << "train set size: " << train->Count() << std::endl;
+        log << "test set size: " << test->Count() << std::endl;
 
-        TrainingParameters trainingParameters;
-        trainingParameters.MaxDecisionLevels = D.value()-1;
-        trainingParameters.NumberOfCandidateFeatures = F.value();
-        trainingParameters.NumberOfCandidateThresholdsPerFeature = L.value();
-        trainingParameters.NumberOfTrees = T.value();
-        trainingParameters.Verbose = verbose.value();
+        if (argc<3){
 
-        DepthFeatureFactory factory;
-        HoughTrainingContext<DepthFeature> context(db.voteClassCount(),factory);
+            DepthFeatureParameters featureParams;
+            featureParams.uvlimit_ = 30;
+            featureParams.zeroplane_ = 300;
 
-        std::auto_ptr<Forest<DepthFeature, VotesStats> > forest;
-        forest = ForestTrainer<DepthFeature, VotesStats>::TrainForest (
-                random, trainingParameters, context, db );
+            log << featureParams;
 
-        std::cout << "forest trained" << std::endl;
+            Parameter<int> T(1, "No. of trees in the forest.");
+            Parameter<int> D(8, "Maximum tree levels.");
+            Parameter<int> F(300, "No. of candidate feature response functions per split node.");
+            Parameter<int> L(20, "No. of candidate thresholds per feature response function.");
+            Parameter<bool> verbose(true,"Enables verbose progress indication.");
 
-        std::ofstream out("hforest",std::ios_base::binary);
+            TrainingParameters trainingParameters;
+            trainingParameters.MaxDecisionLevels = D.value()-1;
+            trainingParameters.NumberOfCandidateFeatures = F.value();
+            trainingParameters.NumberOfCandidateThresholdsPerFeature = L.value();
+            trainingParameters.NumberOfTrees = T.value();
+            trainingParameters.Verbose = verbose.value();
 
-        forest->Serialize(out);
-        std::cout << "forest serialized" << std::endl;
+            DepthFeatureFactory factory(featureParams);
+            HoughTrainingContext<DepthFeature> context(train->voteClassCount(),factory);
 
-        out.close();
+            forest = ForestTrainer<DepthFeature, VotesStats>::TrainForest (
+                random, trainingParameters, context, db ,&progress);
+
+            log << "forest trained" << std::endl;
+
+            std::ostream &out = cache.openBinStream("forest");
+            forest->Serialize(out);
+
+            log << "forest serialized" << std::endl;
+        }else{
+
+            std::ifstream in(argv[2],std::ios_base::binary);
+            forest = Forest<DepthFeature, VotesStats>::Deserialize(in);
+
+            log << "forest deserialized" << std::endl;
+        }
 
         std::vector<std::vector<int> > leafIndicesPerTree;
-        forest->Apply(db,leafIndicesPerTree);
+        forest->Apply(*test,leafIndicesPerTree,&progress);
 
-        std::cout << "apply forest" << std::endl;
+        log << "forest applied" << std::endl;
 
-        HoughVotesStats fullStats(cv::Size(240,320),0);
         cv::Point2i current;
         std::string tmpstr;
-        DepthDBWithVotesImpl::fileindex_type file = db.getImageIdx(0);
 
-        std::cout << "file: " << db.imageIdx2Filename(file) <<std::endl;
+        std::vector< std::vector <HoughVotesStats> > fullStats;
 
-        for(int i=0; i<db.Count(); i++){
-
-            if(db.getImageIdx(i)!=file){
-                break;
-            }
-
-            db.getDataPoint(i,tmpstr,current);
-
-            for(int t=0; t<forest->TreeCount(); t++){
-                if (leafIndicesPerTree[t][i]>0)
-                    fullStats.Aggregate(current,forest->GetTree(t).GetNode(leafIndicesPerTree[t][i]).TrainingDataStatistics);
+        for (int v = 0; v < test->voteClassCount(); v++){
+            fullStats.push_back(std::vector<HoughVotesStats>());
+            for(int i=0; i< test->imageCount(); i++){
+                fullStats.back().push_back(HoughVotesStats(cv::Size(240,320),v));
             }
         }
 
-        std::cout << "statistic aggregated" << std::endl;
+        log << "full stats vector created" << std::endl;
+        log << "image count: " << test->imageCount() << std::endl;
 
-        std::ofstream outstats("fullstats",std::ios_base::binary);
-        fullStats.Serialize(outstats);
-        outstats.close();
+        for(int i=0; i<test->Count(); i++){
+            test->getDataPoint(i,tmpstr,current);
 
+            for(int t=0; t<forest->TreeCount(); t++)
+            {
+                if (leafIndicesPerTree[t][i]>0)
+                    for(int v = 0; v < test->voteClassCount(); v++){
+
+                        fullStats[v][test->getImageIdx(i)].Aggregate(current,forest->GetTree(t).GetNode(leafIndicesPerTree[t][i]).TrainingDataStatistics);
+
+                    }
+            }
+        }
+
+        log << "statistic aggregated" << std::endl;
+
+        std::vector<bool> seen(test->imageCount(),false);
+        std::vector<cv::Point2i> votes;
+        cv::Point2i p;
+        std::string filename;
+        std::ofstream *stream;
+
+        for(int i=0; i<test->Count(); i++){
+            if(!seen[test->getImageIdx(i)])
+            {
+                seen[test->getImageIdx(i)] = true;
+                log << "i: " << i <<
+                       "filename: " << test->imageIdx2Filename(test->getOriginalImageIdx(i)) <<
+                       "imindex: "  << std::endl;
+
+                test->getDataPointVote(i,votes);
+                test->getDataPoint(i,filename,p);
+                for(int v = 0; v < test->voteClassCount(); v++){
+                    fullStats[v][test->getImageIdx(i)].setGT(votes[v]+p);
+                    filename = "img_" + num2str<int>(i)+ "_" + num2str<int>(v);
+                    stream = (std::ofstream *)&cache.openBinStream(filename);
+                    fullStats[v][test->getImageIdx(i)].Serialize(*stream);
+                    stream->close();
+                    fullStats[v][test->getImageIdx(i)].Serialize(cache.base() + filename + std::string(".png"));
+                }
+                votes.clear();
+            }
+        }
+
+        log << "results serialized" << std::endl;
 
 
     }catch(std::exception e){
-        std::cout << "exception caught" << e.what() << std::endl;
+        std::cerr << "exception caught" << e.what() << std::endl;
+        std::cerr.flush();
     }
 }

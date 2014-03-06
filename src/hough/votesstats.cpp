@@ -49,7 +49,9 @@ void VotesStats::Aggregate(const VotesStats& stats)
 void VotesStats::Compress()
 {
     /*radical solution*/
-    Clear();
+    for(int i=0 ; i < voteClasses_; i++){
+        votes_[i].clear();
+    }
 }
 
 bool VotesStats::SerializeChar(std::ostream &stream) const
@@ -136,6 +138,12 @@ double VotesStats::VoteVariance() const
         /*compute average distance*/
         d2=0;
         for(voteVector::const_iterator j =  votes_[i].begin(); j!= votes_[i].end(); j++){
+#ifdef ENABLE_OVERFLOW_CHECKS
+            if(d2 + norm2((double)((*j).x-mx),(double)((*j).y-my)) < d2){
+                std::cerr << "VotesStats::VoteVariance(): stats overflow" << std::endl;
+                std::cerr.flush();
+            }
+#endif
             d2+=norm2((double)((*j).x-mx),(double)((*j).y-my));
         }
 

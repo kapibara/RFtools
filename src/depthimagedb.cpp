@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-Cache::addToCache(const std::string &file)
+void Cache::addToCache(const std::string &file)
 {
     files_.push_back(file);
 }
