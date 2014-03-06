@@ -4,17 +4,18 @@
 
 #include <cmath>
 
-DepthFeatureFactory::DepthFeatureFactory()
+DepthFeatureFactory::DepthFeatureFactory(const DepthFeatureParameters &param):param_(param)
 {
-    uvlimit_ = 10;
-    zeroplane_ = 200;
+
 }
 
 DepthFeature DepthFeatureFactory::getDepthFeature(MicrosoftResearch::Cambridge::Sherwood::Random &random){
-    cv::Point2i u = cv::Point2i(floor((random.NextDouble()*2*uvlimit_-uvlimit_)),floor((random.NextDouble()*2*uvlimit_-uvlimit_)));
-    cv::Point2i v = cv::Point2i(floor((random.NextDouble()*2*uvlimit_-uvlimit_)),floor((random.NextDouble()*2*uvlimit_-uvlimit_)));
+    cv::Point2i u = cv::Point2i(floor((random.NextDouble()*2*param_.uvlimit_-param_.uvlimit_)),
+                                floor((random.NextDouble()*2*param_.uvlimit_-param_.uvlimit_)));
+    cv::Point2i v = cv::Point2i(floor((random.NextDouble()*2*param_.uvlimit_-param_.uvlimit_)),
+                                floor((random.NextDouble()*2*param_.uvlimit_-param_.uvlimit_)));
 
-    return DepthFeature(u,v,zeroplane_);
+    return DepthFeature(u,v,param_.zeroplane_);
 }
 
 float DepthFeature::GetResponse(MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection &data, unsigned int dataIndex)
@@ -32,11 +33,14 @@ float DepthFeature::GetResponse(MicrosoftResearch::Cambridge::Sherwood::IDataPoi
         x1 = x + u_*((double)zeroplane_/(double)Ix);
         x2 = x + v_*((double)zeroplane_/(double)Ix);
 
+//        std::cerr << "x1:" << x1 << std::endl;
+//        std::cerr << "x2:" << x2 << std::endl;
+
         if (x1.x < 0 | x1.x>=I.cols | x1.y < 0 |x1.y>=I.rows |
             x2.x < 0 | x2.x>=I.cols | x2.y < 0 |x2.y>=I.rows){
 
 
-            return NaN();
+            return bg();
         }else{
 
             if (isDepthValid(I.at<unsigned short>(x1)) & isDepthValid(I.at<unsigned short>(x2))){
@@ -46,12 +50,12 @@ float DepthFeature::GetResponse(MicrosoftResearch::Cambridge::Sherwood::IDataPoi
 
             }else{
 
-                return NaN();
+                return bg();
             }
         }
     }else{
 
-        return NaN();
+        return bg();
     }
 }
 

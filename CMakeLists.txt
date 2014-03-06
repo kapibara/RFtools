@@ -23,6 +23,7 @@ endif()
 
 find_package(Boost REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(STXXL REQUIRED)
 
 include_directories(${HOME}/src)
 include_directories(${Forest_DIR})
@@ -32,11 +33,20 @@ include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${OpenCV_LIB_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
 
-set(BOOST_LIBS boost_filesystem-vc100-mt-1_54)
-#get_cmake_property(_variableNames VARIABLES)
-#foreach(_variableName ${_variableNames})
-#    message(STATUS "${_variableName}=${${_variableName}}")
-#endforeach()
+#message("Boost_LIBRARY_DIRS = ${Boost_LIBRARY_DIRS}")
+
+if(WIN32)
+    set(Boost_LIBS libboost_filesystem-vc100-mt-1_54)
+    link_directories(${Boost_LIBRARY_DIRS})
+else()
+    set(Boost_LIBS boost_filesystem boost_system)
+    link_directories("/usr/lib64/")
+endif()
+
+get_cmake_property(_variableNames VARIABLES)
+foreach(_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
 
 #set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} /Od")
 

@@ -2,6 +2,22 @@
 
 #include <fstream>
 
+Cache::addToCache(const std::string &file)
+{
+    files_.push_back(file);
+}
+
+void Cache::getImage(fileindex_type imageindex, cv::Mat &image)
+{
+    if (imageindex != previous_){
+        cachCallCount_++;
+        cached_ = cv::imread(files_[imageindex],-1);
+        previous_ = imageindex;
+    }
+
+    image = cached_;
+}
+
 DepthFileBasedImageDBImpl::DepthFileBasedImageDBImpl(const std::string &base,
                                              bool constImgSize)
 {
@@ -95,14 +111,12 @@ void DepthFileBasedImageDBImpl::readFiles(const std::string &file, GeneralString
 
                 std::cout << "reading file: " << filename << std::endl;
 
-                files_.push_back(filename);
+                cache.push_back(filename);
                 image = cv::imread(filename,-1);
 
                 if (elementCount_ == 0){
                     if(constImgSize_)
                         imgSize_ = cv::Size(image.cols,image.rows);
-                    cache_.push_back(image);
-                    previous_ = elementCount_;
                 }
 
                 if(constImgSize_){

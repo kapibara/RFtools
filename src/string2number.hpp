@@ -20,6 +20,7 @@ std::string num2str(T number, int fieldwidth = 0){
 
     if(fieldwidth > 0){
         stream.width(fieldwidth);
+        stream.fill('0');
     }
     stream << number;
 

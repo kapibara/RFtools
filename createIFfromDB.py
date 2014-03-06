@@ -8,32 +8,37 @@ def createIF(inputpath, foutputfile, classes = 'a-z'):
 
     out = open(foutputfile, 'w')
     fc = 0
+    
+    pattern = '^[' + classes + ']'
+    
+    lmatcher = re.compile(pattern)
 
     pattern = '^[' + classes + ']'
 
     lmatcher = re.compile(pattern)
 
     for l in letters:
-
+      
         if lmatcher.match(l):
-            files = glob.glob(inputpath + '/' + l + '/imDepthOrig*')
 
-        for f in files:
+	  files = glob.glob(inputpath + '/' + l + '/imDepthOrig*')
 
-            f = f.replace('\\', '/')
+	  for f in files:
 
-            if fc < 1000:
+	      f = f.replace('\\', '/')
 
-                out.write(f + ',' + l + '\n')
-            else:
+	      if fc < 1000:
 
-                out.close()
+		  out.write(f + ',' + l + '\n')
+	      else:
 
-                print 'files read: {0}'.format(fc)
+		  out.close()
 
-                return
+		  print 'files read: {0}'.format(fc)
 
-            fc = fc + 1
+		  return
+
+	      fc = fc + 1
 
     out.close()
 
@@ -41,6 +46,10 @@ def createIF(inputpath, foutputfile, classes = 'a-z'):
 
 def createMaskedIF(inputpath, foutputfile, cl = 'a-z', maximcount = 100000):
     letters = os.listdir(inputpath)
+    
+    pattern = '^[' + cl + ']'
+    
+    lmatcher = re.compile(pattern)
 
     pattern = '^[' + cl + ']'
 
@@ -53,6 +62,9 @@ def createMaskedIF(inputpath, foutputfile, cl = 'a-z', maximcount = 100000):
 
         if lmatcher.match(l):
             files = glob.glob(inputpath + '/' + l + '/imDepthOrig*')
+            
+            if len(files) > maximcount:
+                files = files[0:maximcount]
 
             if len(files) > maximcount:
                 files = files[0:maximcount]

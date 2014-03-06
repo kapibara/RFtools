@@ -39,7 +39,11 @@ public:
         pixels_[p].Aggregate(stats);*/
 
         std::pair<pToStatsMap::iterator,bool> result = pixels_.insert(std::make_pair(p,ClassStats(clCount_)));
-        ((result.first)->second).Aggregate(stats.ClassDecision());
+        ((result.first)->second).Aggregate(stats);
+
+        if (!result.second){
+            std::cerr << "duplicated pixel!" << std::endl;
+        }
 
     }
 

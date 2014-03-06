@@ -9,7 +9,7 @@
 
 class ClassStats
 {
-    typedef unsigned int bintype;
+    typedef unsigned long bintype;
 public:
     ClassStats(unsigned short clCount = 0);
     ClassStats(const ClassStats &obj); /*this deep copying might be not needed according to the framework*/
@@ -33,11 +33,11 @@ public:
 
     ClassStats & operator=(const ClassStats & obj); /*this deep copying might be not needed according to the framework*/
 
-    bintype SampleCount(){
+    bintype SampleCount() const {
         return sampleCount_;
     }
 
-    unsigned char ClassCount(){
+    unsigned char ClassCount() const{
         return binCount_;
     }
 

@@ -40,10 +40,45 @@ class DepthFileBasedImageDB: public DepthImageDB
 public:
     typedef unsigned short fileindex_type;
     virtual bool getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate) = 0;
+    virtual bool getDataPoint(index_type i, cv::Mat &img, cv::Point2i &coordinate) = 0;
     virtual fileindex_type getImageIdx(index_type i) const = 0;
     virtual std::string imageIdx2Filename(fileindex_type i) const = 0;
     virtual fileindex_type imageCount() const = 0;
     virtual unsigned int clearCacheCallCount() = 0;
+};
+
+
+class Cache
+{
+public:
+    typedef unsigned short fileindex_type;
+
+    Cache()
+    {
+        cachCallCount_ = 0;
+        previous_ = -1;
+    }
+
+    bool addToCache(const std::string &file);
+
+    bool getImage(fileindex_type imgindex, cv::Mat &image);
+
+    fileindex_type imageCount() const
+    {
+        return files_.size();
+    }
+
+    unsigned int clearCacheCallCount(){
+        unsigned int tmp = cachCallCount_;
+        cachCallCount_ = 0;
+        return tmp;
+    }
+
+private:
+    std::vector<std::string> files_;
+    unsigned int cachCallCount_;
+    cv::Mat cached_;
+    fileindex_type previous_;
 };
 
 
@@ -112,12 +147,9 @@ private:
     /*simple imlementation to push pixels to an array; called from postprocessFile()*/
     unsigned int cachCallCount_;
 
-    std::vector<std::string> files_;
+    Cache cache_;
     std::string path_;
 
-    cv::Mat cache_;
-
-    fileindex_type previous_;
     index_type elementCount_;
 
     ArrayList<filebased_type> pointsIndex_;
