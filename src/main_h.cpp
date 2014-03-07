@@ -71,7 +71,7 @@ int main(int argc, char **argv)
             log << featureParams;
 
             Parameter<int> T(1, "No. of trees in the forest.");
-            Parameter<int> D(5, "Maximum tree levels.");
+            Parameter<int> D(8, "Maximum tree levels.");
             Parameter<int> F(500, "No. of candidate feature response functions per split node.");
             Parameter<int> L(20, "No. of candidate thresholds per feature response function.");
             Parameter<bool> verbose(true,"Enables verbose progress indication.");
@@ -94,6 +94,7 @@ int main(int argc, char **argv)
             time(&end);
             double dif = difftime (end,start);
 
+            log << "time: " << dif << std::endl;
             log << "forest trained" << std::endl;
 
             std::ostream &out = cache.openBinStream("forest");

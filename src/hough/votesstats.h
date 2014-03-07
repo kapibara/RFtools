@@ -30,6 +30,7 @@ public:
             my_.push_back(0);
             mx2_.push_back(0);
             my2_.push_back(0);
+            votesCount_.push_back(0);
         }
     }
 
@@ -41,6 +42,7 @@ public:
            my_[i] = 0;
            mx2_[i] = 0;
            my2_[i] = 0;
+           votesCount_[i] = 0;
        }
        pointCount_ = 0;
        variance_ = -1;
@@ -96,6 +98,7 @@ private:
 
     //very memory-unfriendly; in a cv::Mat, quantized?
     std::vector< voteVector > votes_;
+    std::vector<element_count> votesCount_;
     std::vector< double > mx_;
     std::vector< double > mx2_;
     std::vector< double > my_;

@@ -14,6 +14,7 @@ void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCol
         for(int i=0; i<voteClasses_; i++){
             if (norm2(vote[i].x,vote[i].y) < dthreashold2_){
                 votes_[i].push_back(vote[i]);
+                votesCount_[i]++;
                 /*pre-compute variance*/
 #ifdef ENABLE_OVERFLOW_CHECKS
     if(mx2_[i]>std::numeric_limits<double>::max() - (vote[i].x)*(vote[i].x)){
@@ -52,6 +53,7 @@ void VotesStats::Aggregate(const VotesStats& stats)
 
     for(int i=0; i<voteClasses_; i++){
         votes_[i].insert(votes_[i].end(),stats.votes_[i].begin(),stats.votes_[i].end());
+        votesCount_[i] += stats.votesCount_[i];
         /*pre-compute variance*/
 #ifdef ENABLE_OVERFLOW_CHECKS
     if(mx2_[i]>std::numeric_limits<double>::max() - stats.mx2_[i]){
@@ -154,14 +156,14 @@ bool VotesStats::Deserialize(std::istream &stream)
 double VotesStats::VoteVariance()
 {
     if (variance_ < 0){
-        double mx,my,d2,fulld2;
+        double mx,my,fulld2;
 
         fulld2 = 0;
 
         for(int i=0; i<voteClasses_; i++){
 
-            mx = mx_[i]/votes_[i].size();
-            my = my_[i]/votes_[i].size();
+            mx = mx_[i]/votesCount_[i];
+            my = my_[i]/votesCount_[i];
 
 #ifdef ENABLE_OVERFLOW_CHECKS
     if (std::abs(mx_[i]) > (std::numeric_limits<double>::max()/std::abs(mx))){
@@ -182,7 +184,7 @@ double VotesStats::VoteVariance()
     }
 #endif
             /*optimized variance computation; otherwise n^2, performance killer*/
-            fulld2 += ((mx2_[i] - mx*mx_[i]) + (my2_[i] - my*my_[i]));
+            fulld2 += (mx2_[i] - mx*mx_[i]) + (my2_[i] - my*my_[i]);
         }
 
         variance_ = fulld2;
