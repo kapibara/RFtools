@@ -4,6 +4,7 @@ void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCol
 {
     DepthDBWithVotes &db = dynamic_cast<DepthDBWithVotes &>(data);
     std::vector<cv::Point2i> vote;
+    variance_ = -1; //invalidate variance
 
     db.getDataPointVote(index,vote);
 
@@ -13,32 +14,64 @@ void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCol
         for(int i=0; i<voteClasses_; i++){
             if (norm2(vote[i].x,vote[i].y) < dthreashold2_){
                 votes_[i].push_back(vote[i]);
+                /*pre-compute variance*/
+#ifdef ENABLE_OVERFLOW_CHECKS
+    if(mx2_[i]>std::numeric_limits<double>::max() - (vote[i].x)*(vote[i].x)){
+        std::cerr << "VotesStats::Aggregate(): mx2_ stats overflow" << std::endl;
+        std::cerr.flush();
+    }
+    if(my2_[i]>std::numeric_limits<double>::max() - (vote[i].y)*(vote[i].y)){
+        std::cerr << "VotesStats::Aggregate(): my2_ stats overflow" << std::endl;
+        std::cerr.flush();
+    }
+#endif
+                mx_[i] += vote[i].x;
+                my_[i] += vote[i].y;
+                mx2_[i] += (vote[i].x)*(vote[i].x);
+                my2_[i] += (vote[i].y)*(vote[i].y);
             }
         }
     }catch(std::exception e){
         std::cerr << "exception caught during aggregation: "<< e.what() << std::endl;
     }
-
-
-    pointCount_++;
-
 #ifdef ENABLE_OVERFLOW_CHECKS
-    if(pointCount_==0){
-        std::cerr << "VotesStats::Aggregate(): stats overflow" << std::endl;
+    if(pointCount_> (std::numeric_limits<element_count>::max() - 1)){
+        std::cerr << "VotesStats::Aggregate(): pointCount_ stats overflow" << std::endl;
         std::cerr.flush();
     }
 #endif
+
+    pointCount_++;
+
+
 }
 
 void VotesStats::Aggregate(const VotesStats& stats)
 {
+    variance_ = -1; //invalidate variance
+
     for(int i=0; i<voteClasses_; i++){
         votes_[i].insert(votes_[i].end(),stats.votes_[i].begin(),stats.votes_[i].end());
+        /*pre-compute variance*/
+#ifdef ENABLE_OVERFLOW_CHECKS
+    if(mx2_[i]>std::numeric_limits<double>::max() - stats.mx2_[i]){
+        std::cerr << "VotesStats::Aggregate(): mx2_ stats overflow" << std::endl;
+        std::cerr.flush();
+    }
+    if(my2_[i]>std::numeric_limits<double>::max() - stats.my2_[i]){
+        std::cerr << "VotesStats::Aggregate(): my2_ stats overflow" << std::endl;
+        std::cerr.flush();
+    }
+#endif
+        mx_[i] += stats.mx_[i];
+        my_[i] += stats.my_[i];
+        mx2_[i] += stats.mx2_[i];
+        my2_[i] += stats.my2_[i];
     }
 
 #ifdef ENABLE_OVERFLOW_CHECKS
-    if ((pointCount_+stats.pointCount_)<pointCount_){
-        std::cerr << "VotesStats::Aggregate(): stats overflow" << std::endl;
+    if (pointCount_> (std::numeric_limits<element_count>::max() - stats.pointCount_)){
+        std::cerr << "VotesStats::Aggregate(): pointCount_ stats overflow" << std::endl;
         std::cerr.flush();
     }
 #endif
@@ -118,38 +151,44 @@ bool VotesStats::Deserialize(std::istream &stream)
     return true;
 }
 
-double VotesStats::VoteVariance() const
+double VotesStats::VoteVariance()
 {
-    double mx,my,d2,fulld2;
+    if (variance_ < 0){
+        double mx,my,d2,fulld2;
 
-    fulld2 = 0;
+        fulld2 = 0;
 
-    for(int i=0; i<voteClasses_; i++){
-        /*compute mean*/
-        mx=0;
-        my=0;
-        for(voteVector::const_iterator j =  votes_[i].begin(); j!= votes_[i].end(); j++){
-            mx += (*j).x;
-            my += (*j).y;
-        }
-        mx = mx/votes_[i].size();
-        my = my/votes_[i].size();
+        for(int i=0; i<voteClasses_; i++){
 
-        /*compute average distance*/
-        d2=0;
-        for(voteVector::const_iterator j =  votes_[i].begin(); j!= votes_[i].end(); j++){
+            mx = mx_[i]/votes_[i].size();
+            my = my_[i]/votes_[i].size();
+
 #ifdef ENABLE_OVERFLOW_CHECKS
-            if(d2 + norm2((double)((*j).x-mx),(double)((*j).y-my)) < d2){
-                std::cerr << "VotesStats::VoteVariance(): stats overflow" << std::endl;
-                std::cerr.flush();
-            }
+    if (std::abs(mx_[i]) > (std::numeric_limits<double>::max()/std::abs(mx))){
+        std::cerr << "VotesStats::Aggregate(): mx*mx_[i] stats overflow" << std::endl;
+        std::cerr.flush();
+    }
+    if (std::abs(my_[i]) > (std::numeric_limits<double>::max()/std::abs(my))){
+        std::cerr << "VotesStats::Aggregate(): my*my_[i] stats overflow" << std::endl;
+        std::cerr.flush();
+    }
+    if ((mx2_[i] - mx*mx_[i]) > (std::numeric_limits<double>::max()- (my2_[i] - my*my_[i]))){
+        std::cerr << "VotesStats::Aggregate(): ((mx2_[i] - mx*mx_[i]) + (my2_[i] - my*my_[i])) stats overflow" << std::endl;
+        std::cerr.flush();
+    }
+    if (fulld2 > (std::numeric_limits<double>::max()- ((mx2_[i] - mx*mx_[i]) + (my2_[i] - my*my_[i])))){
+        std::cerr << "VotesStats::Aggregate(): fulld2 stats overflow" << std::endl;
+        std::cerr.flush();
+    }
 #endif
-            d2+=norm2((double)((*j).x-mx),(double)((*j).y-my));
+            /*optimized variance computation; otherwise n^2, performance killer*/
+            fulld2 += ((mx2_[i] - mx*mx_[i]) + (my2_[i] - my*my_[i]));
         }
 
-        fulld2 += d2;
+        variance_ = fulld2;
     }
 
-    return fulld2;
+    return variance_;
+
 }
 

@@ -7,7 +7,7 @@
 #include <vector>
 #include <list>
 
-#define ENABLE_OVERFLOW_CHECKS
+//#define ENABLE_OVERFLOW_CHECKS
 
 class VotesStats
 {
@@ -22,9 +22,14 @@ public:
         dthreashold2_ = 100*100;
         pointCount_=0;
         voteClasses_ = voteClasses;
+        variance_ = -1;
 
         for(int i=0 ; i < voteClasses_; i++){
             votes_.push_back(voteVector());
+            mx_.push_back(0);
+            my_.push_back(0);
+            mx2_.push_back(0);
+            my2_.push_back(0);
         }
     }
 
@@ -32,8 +37,13 @@ public:
     {
        for(int i=0 ; i < voteClasses_; i++){
            votes_[i].clear();
+           mx_[i] = 0;
+           my_[i] = 0;
+           mx2_[i] = 0;
+           my2_[i] = 0;
        }
        pointCount_ = 0;
+       variance_ = -1;
     }
 
     const_iterator begin(unsigned char voteClass) const{
@@ -60,7 +70,7 @@ public:
 
     void Compress();
 
-    double VoteVariance() const;
+    double VoteVariance();
 
     bool Serialize(std::ostream &stream) const;
     bool SerializeChar(std::ostream &stream) const;
@@ -72,6 +82,7 @@ public:
     }
 
 private:
+
 
     unsigned int norm2(int x, int y) const
     {
@@ -85,10 +96,16 @@ private:
 
     //very memory-unfriendly; in a cv::Mat, quantized?
     std::vector< voteVector > votes_;
+    std::vector< double > mx_;
+    std::vector< double > mx2_;
+    std::vector< double > my_;
+    std::vector< double > my2_;
 
     int dthreashold2_;
     unsigned char voteClasses_;
     element_count pointCount_;
+
+    double variance_;
 
 };
 

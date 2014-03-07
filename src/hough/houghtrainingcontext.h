@@ -25,7 +25,7 @@ public:
         return VotesStats(nClasses_);
     }
 
-    virtual double ComputeInformationGain(const VotesStats& parent, const VotesStats& leftChild, const VotesStats& rightChild)
+    virtual double ComputeInformationGain(VotesStats& parent, VotesStats& leftChild, VotesStats& rightChild)
     {
         double lvv = leftChild.VoteVariance();
         double rvv = rightChild.VoteVariance();
@@ -36,7 +36,7 @@ public:
         }
         /*computing parent.VoteVariance() is not optimal*/
 
-        return (parent.VoteVariance() - (((double)leftChild.Count())/parent.Count()*lvv +((double)rightChild.Count())/parent.Count()*rvv));
+        return ((parent.VoteVariance() - lvv) - rvv);
     }
 
     virtual bool ShouldTerminate(const VotesStats& parent, const VotesStats& leftChild, const VotesStats& rightChild, double gain)
