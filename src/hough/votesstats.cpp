@@ -5,6 +5,7 @@ void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCol
     DepthDBWithVotes &db = dynamic_cast<DepthDBWithVotes &>(data);
     std::vector<cv::Point2i> vote;
     variance_ = -1; //invalidate variance
+    int x2,y2;
 
     db.getDataPointVote(index,vote);
 
@@ -12,24 +13,27 @@ void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCol
 
     try{
         for(int i=0; i<voteClasses_; i++){
-            if (norm2(vote[i].x,vote[i].y) < dthreashold2_){
+            x2 = (vote[i].x)*(vote[i].x);
+            y2 = (vote[i].y)*(vote[i].y);
+            if (x2+y2 < dthreashold2_){
                 votes_[i].push_back(vote[i]);
                 votesCount_[i]++;
                 /*pre-compute variance*/
+
 #ifdef ENABLE_OVERFLOW_CHECKS
-    if(mx2_[i]>std::numeric_limits<double>::max() - (vote[i].x)*(vote[i].x)){
+    if(mx2_[i]>std::numeric_limits<double>::max() - x2){
         std::cerr << "VotesStats::Aggregate(): mx2_ stats overflow" << std::endl;
         std::cerr.flush();
     }
-    if(my2_[i]>std::numeric_limits<double>::max() - (vote[i].y)*(vote[i].y)){
+    if(my2_[i]>std::numeric_limits<double>::max() - y2){
         std::cerr << "VotesStats::Aggregate(): my2_ stats overflow" << std::endl;
         std::cerr.flush();
     }
 #endif
                 mx_[i] += vote[i].x;
                 my_[i] += vote[i].y;
-                mx2_[i] += (vote[i].x)*(vote[i].x);
-                my2_[i] += (vote[i].y)*(vote[i].y);
+                mx2_[i] += x2;
+                my2_[i] += y2;
             }
         }
     }catch(std::exception e){
@@ -50,9 +54,10 @@ void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCol
 void VotesStats::Aggregate(const VotesStats& stats)
 {
     variance_ = -1; //invalidate variance
+    aggregationValid_ = false; //this aggregation does not copy votes -> therefore invalidate
 
     for(int i=0; i<voteClasses_; i++){
-        votes_[i].insert(votes_[i].end(),stats.votes_[i].begin(),stats.votes_[i].end());
+        //votes_[i].insert(votes_[i].end(),stats.votes_[i].begin(),stats.votes_[i].end());
         votesCount_[i] += stats.votesCount_[i];
         /*pre-compute variance*/
 #ifdef ENABLE_OVERFLOW_CHECKS
@@ -87,6 +92,7 @@ void VotesStats::Compress()
     for(int i=0 ; i < voteClasses_; i++){
         votes_[i].clear();
     }
+    aggregationValid_ = true;
 }
 
 bool VotesStats::SerializeChar(std::ostream &stream) const
@@ -116,6 +122,10 @@ bool VotesStats::Serialize(std::ostream &stream) const
 {
     stream.write((const char *)(&pointCount_),sizeof(pointCount_));  
     stream.write((const char *)(&voteClasses_),sizeof(voteClasses_));
+
+    if(!aggregationValid_){
+        std::cerr << "votesstats does not have valid votes" << std::endl;
+    }
 
     unsigned int vsize;
 
@@ -149,6 +159,9 @@ bool VotesStats::Deserialize(std::istream &stream)
             votes_.back().push_back(p);
         }
     }
+
+    aggregationValid_ = true;
+    variance_ = -1;
 
     return true;
 }

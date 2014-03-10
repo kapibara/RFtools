@@ -17,35 +17,39 @@ public:
     typedef voteVector::const_iterator const_iterator;
     typedef unsigned int element_count;
 
-    VotesStats(unsigned char voteClasses = 0)
+    VotesStats(unsigned char voteClasses = 0):
+        mx_(voteClasses,0),
+        my_(voteClasses,0),
+        mx2_(voteClasses,0),
+        my2_(voteClasses,0),
+        votesCount_(voteClasses,0),
+        votes_(voteClasses,voteVector())
+
     {
         dthreashold2_ = 100*100;
         pointCount_=0;
         voteClasses_ = voteClasses;
         variance_ = -1;
+        aggregationValid_ = true;
 
-        for(int i=0 ; i < voteClasses_; i++){
-            votes_.push_back(voteVector());
-            mx_.push_back(0);
-            my_.push_back(0);
-            mx2_.push_back(0);
-            my2_.push_back(0);
-            votesCount_.push_back(0);
-        }
     }
 
     void Clear()
     {
+
+       mx_.assign(mx_.size(),0);
+       my_.assign(my_.size(),0);
+       mx2_.assign(mx2_.size(),0);
+       my2_.assign(my2_.size(),0);
+       votesCount_.assign(votesCount_.size(),0);
+
        for(int i=0 ; i < voteClasses_; i++){
            votes_[i].clear();
-           mx_[i] = 0;
-           my_[i] = 0;
-           mx2_[i] = 0;
-           my2_[i] = 0;
-           votesCount_[i] = 0;
+
        }
        pointCount_ = 0;
        variance_ = -1;
+       aggregationValid_ = true;
     }
 
     const_iterator begin(unsigned char voteClass) const{
@@ -109,6 +113,7 @@ private:
     element_count pointCount_;
 
     double variance_;
+    bool aggregationValid_;
 
 };
 
