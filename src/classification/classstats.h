@@ -31,6 +31,11 @@ public:
         //do nothing
     }
 
+    void FullStats(bool compute)
+    {
+        //do nothing
+    }
+
     ClassStats & operator=(const ClassStats & obj); /*this deep copying might be not needed according to the framework*/
 
     bintype SampleCount() const {

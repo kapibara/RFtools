@@ -13,7 +13,7 @@
 #include "localcache.h"
 #include "TrainingParameters.h"
 #include "hough/houghtrainingcontext.h"
-#include "classification/classstats.h"
+//#include "classification/classstats.h"
 #include "string2number.hpp"
 #include "rfutils.h"
 
@@ -86,11 +86,11 @@ int main(int argc, char **argv)
             trainingParameters.Verbose = verbose.value();
 
             DepthFeatureFactory factory(featureParams);
-            HoughTrainingContext<DepthFeature> context(train->voteClassCount(),factory);
+            HoughTrainingContext<DepthFeature> context(db.voteClassCount(),factory);
 
             time(&start);
             forest = ForestTrainer<DepthFeature, VotesStats>::TrainForest (
-                random, trainingParameters, context, *train ,&progress);
+                random, trainingParameters, context, db ,&progress);
             time(&end);
             double dif = difftime (end,start);
 
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
         log << "statistic aggregated" << std::endl;
 
         std::vector<bool> seen(test->imageCount(),false);
-        std::vector<cv::Point2i> votes;
+        std::vector<cv::Point2i> votes(test->voteClassCount());
         cv::Point2i p;
         std::string filename;
         std::ofstream *stream;
@@ -169,7 +169,6 @@ int main(int argc, char **argv)
                     stream->close();
                     fullStats[v][test->getImageIdx(i)].Serialize(cache.base() + filename + std::string(".png"));
                 }
-                votes.clear();
             }
         }
 

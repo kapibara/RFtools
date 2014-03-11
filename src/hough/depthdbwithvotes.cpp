@@ -33,12 +33,17 @@ bool DepthDBWithVotesImpl::postprocessFile(const cv::Mat &mat, GeneralStringPars
 
 bool DepthDBWithVotesImpl::getDataPointVote(index_type i, std::vector<cv::Point2i> &vote)
 {
+    if (vote.size() != voteClassCount_){
+        std::cerr << "vote container does not have size " << (int)voteClassCount_ << std::endl;
+        std::cerr.flush();
+    }
+
     filebased_type pair = getIndex(i);
 
     cv::Point2i x = index2point(pair.second,imgSize_);//we know that imgSize is constant
 
     for(int i=0; i<votes_[pair.first].size();i++){
-        vote.push_back(votes_[pair.first][i]-x);
+        vote[i] = votes_[pair.first][i]-x;
     }
 
     return true;
