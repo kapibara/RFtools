@@ -116,6 +116,7 @@ public:
     bool getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate);
 
     fileindex_type getImageIdx(index_type i) const
+
     {
         return pointsIndex_[i].first;
     }
@@ -144,6 +145,7 @@ protected:
 
     /*redefine this function to add aditional parts of the database*/
     virtual bool postprocessFile(const cv::Mat &image,GeneralStringParser &parser);
+
 
     void push_pixel(unsigned short index);
 
