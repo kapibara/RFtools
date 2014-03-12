@@ -25,7 +25,9 @@ set(GENERAL_HEADERS /
             depthimagedb.h/
             split.h /
             rfutils.h /
-            serialization)
+            serialization.h /
+            subsampler.h /
+            imagecache.h)
 
 set(CL_SOURCE ${CL_FOLDER}/depthdb.cpp /
             ${CL_FOLDER}/classstats.cpp /
@@ -47,7 +49,9 @@ set(GENERAL_SOURCE  /
                     depthimagedb.cpp /
                     split.cpp /
                     rfutils.cpp /
-                    serialization.cpp)
+                    serialization.cpp /
+                    subsampler.cpp /
+                    imagecache.cpp)
 
 #required to see the code in QT creator only...
 set(FOREST ${Forest_DIR}/Forest.h /

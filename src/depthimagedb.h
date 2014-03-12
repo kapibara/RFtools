@@ -7,6 +7,8 @@
 
 #include "Interfaces.h"
 #include "arraylist.h"
+#include "subsampler.h"
+#include "imagecache.h"
 
 /*DB interface required to compute depth features*/
 
@@ -50,10 +52,9 @@ public:
     virtual unsigned int clearCacheCallCount() = 0;
 };
 
-
 class SubindexFileBasedImageDB: public DepthFileBasedImageDB
-{
-public:
+    {
+    public:
     SubindexFileBasedImageDB(DepthFileBasedImageDB &source, const std::vector<index_type> &subindex):
         source_(source),subindex_(subindex)
     {
@@ -62,16 +63,16 @@ public:
         }
     }
 
-    unsigned int Count() const{
-        return subindex_.size();
-    }
-
     bool getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate){
         return source_.getDataPoint(subindex_[i],file,coordinate);
     }
 
     bool getDataPoint(index_type i, cv::Mat &img, cv::Point2i &coordinate){
         return source_.getDataPoint(subindex_[i],img,coordinate);
+    }
+
+    unsigned int Count() const{
+        return subindex_.size();
     }
 
     std::string imageIdx2Filename(fileindex_type i) const{
@@ -112,6 +113,12 @@ public:
 
     virtual bool loadDB(const std::string &filename, GeneralStringParser &stringParser);
 
+    void setSubsampler(Subsampler *sub)
+    {
+        delete sub_;
+        sub_ = sub;
+
+    }
     bool getDataPoint(index_type i, cv::Mat &img, cv::Point2i &coordinate);
     bool getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate);
 
@@ -123,11 +130,11 @@ public:
 
     std::string imageIdx2Filename(fileindex_type i) const
     {
-        return files_[i];
+        return cache_.imageIdx2Filename(i);
     }
 
     fileindex_type imageCount() const{
-        return files_.size();
+        return cache_.imageCount();
     }
 
     index_type Count() const{
@@ -170,12 +177,10 @@ private:
     /*simple imlementation to push pixels to an array; called from postprocessFile()*/
     unsigned int cachCallCount_;
 
-    std::vector<std::string> files_;
+    ICache cache_;
+    Subsampler *sub_;
     std::string path_;
 
-    cv::Mat cache_;
-
-    fileindex_type previous_;
     index_type elementCount_;
 
     ArrayList<filebased_type> pointsIndex_;

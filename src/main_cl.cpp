@@ -31,6 +31,7 @@ using namespace MicrosoftResearch::Cambridge::Sherwood;
 
 int main(int argc, char **argv)
 {
+
     TestClassificationForest tester;
     DepthDBClassImage db;
     db.loadDB(argv[1]);
@@ -118,6 +119,12 @@ try{
 
         log << "start forest training ... " << std::endl;
 
+<<<<<<< HEAD
+        ProgressStream progress(log,Verbosity::Verbose);
+
+        forest = ForestTrainer<DepthFeature, ClassStats>::TrainForest (
+                random, trainingParameters, context, *train, &progress );
+=======
         time_t start,end;
         ProgressStream ps(log,Verbose);
 
@@ -128,6 +135,7 @@ try{
 
         time(&end);
         double dif = difftime (end,start);
+>>>>>>> d6680ac3df9ecfebfe309fe345d6dd352a30c2f4
 
         log << "Forest trained: " << forest->GetTree(0).NodeCount() << std::endl;
         log << "Time: " << dif << std::endl;

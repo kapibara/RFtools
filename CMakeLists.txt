@@ -23,6 +23,7 @@ endif()
 
 find_package(Boost REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(STXXL REQUIRED)
 
 include_directories(${HOME}/src)
 include_directories(${Forest_DIR})
@@ -40,12 +41,13 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 #message(STATUS "${CMAKE_CXX_FLAGS}=${${CMAKE_CXX_FLAGS}}")
 
 if(WIN32)
-    set(Boost_LIBS boost_filesystem-vc100-mt-1_54)
+    set(Boost_LIBS libboost_filesystem-vc100-mt-1_54)
     link_directories(${Boost_LIBRARY_DIRS})
 else()
     set(Boost_LIBS boost_filesystem boost_system)
     link_directories("/usr/lib64/")
 endif()
+
 #get_cmake_property(_variableNames VARIABLES)
 #foreach(_variableName ${_variableNames})
 #    message(STATUS "${_variableName}=${${_variableName}}")
