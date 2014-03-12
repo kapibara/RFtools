@@ -17,6 +17,8 @@
 #include "string2number.hpp"
 #include "rfutils.h"
 
+#include <time.h>
+
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 
 int main(int argc, char **argv)
@@ -25,6 +27,8 @@ int main(int argc, char **argv)
     std::cout << "starting the program" << std::endl;
 
     LocalCache cache("DepthHOUGH","/home/kuznetso/tmp");
+
+    std::cout << "arg1: " << argv[1] << std::endl;
 
     if(!cache.init()){
         std::cerr << "failed to initialize temporary directory" << std::endl;
@@ -36,6 +40,7 @@ int main(int argc, char **argv)
     try{
         DepthDBWithVotesImpl db;
         Random random;
+        time_t start,end;
         ProgressStream progress(log,Verbose);
         std::auto_ptr<Forest<DepthFeature, VotesStats> > forest;
         std::auto_ptr<DepthDBWithVotesSubindex> test;
@@ -47,11 +52,12 @@ int main(int argc, char **argv)
 
         db.loadDB(argv[1]);
 
+        log << "loading from: " << argv[1] << std::endl;
         log << "number of images: " << db.imageCount() << std::endl;
         log << "number of points: " << db.Count() << std::endl;
         log << "number of vote classes: " << (int)db.voteClassCount() << std::endl;
 
-        RFUtils::splitRandom<DepthDBWithVotesSubindex>(random,db,train,test);
+        RFUtils::splitRandom<DepthDBWithVotesSubindex>(random,db,train,test,0.8);
 
         log << "train set size: " << train->Count() << std::endl;
         log << "test set size: " << test->Count() << std::endl;
@@ -66,9 +72,11 @@ int main(int argc, char **argv)
 
             Parameter<int> T(1, "No. of trees in the forest.");
             Parameter<int> D(8, "Maximum tree levels.");
-            Parameter<int> F(300, "No. of candidate feature response functions per split node.");
+            Parameter<int> F(500, "No. of candidate feature response functions per split node.");
             Parameter<int> L(20, "No. of candidate thresholds per feature response function.");
             Parameter<bool> verbose(true,"Enables verbose progress indication.");
+
+            log << T << D << F << L << std::endl;
 
             TrainingParameters trainingParameters;
             trainingParameters.MaxDecisionLevels = D.value()-1;
@@ -80,9 +88,13 @@ int main(int argc, char **argv)
             DepthFeatureFactory factory(featureParams);
             HoughTrainingContext<DepthFeature> context(train->voteClassCount(),factory);
 
+            time(&start);
             forest = ForestTrainer<DepthFeature, VotesStats>::TrainForest (
-                random, trainingParameters, context, db ,&progress);
+                random, trainingParameters, context, *train ,&progress);
+            time(&end);
+            double dif = difftime (end,start);
 
+            log << "time: " << dif << std::endl;
             log << "forest trained" << std::endl;
 
             std::ostream &out = cache.openBinStream("forest");
@@ -110,7 +122,7 @@ int main(int argc, char **argv)
         for (int v = 0; v < test->voteClassCount(); v++){
             fullStats.push_back(std::vector<HoughVotesStats>());
             for(int i=0; i< test->imageCount(); i++){
-                fullStats.back().push_back(HoughVotesStats(cv::Size(240,320),v));
+                fullStats.back().push_back(HoughVotesStats(cv::Size(320,240),v));
             }
         }
 

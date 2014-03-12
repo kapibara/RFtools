@@ -7,7 +7,7 @@
 #include <vector>
 #include <list>
 
-#define ENABLE_OVERFLOW_CHECKS
+//#define ENABLE_OVERFLOW_CHECKS
 
 class VotesStats
 {
@@ -17,23 +17,39 @@ public:
     typedef voteVector::const_iterator const_iterator;
     typedef unsigned int element_count;
 
-    VotesStats(unsigned char voteClasses = 0)
+    VotesStats(unsigned char voteClasses = 0):
+        mx_(voteClasses,0),
+        my_(voteClasses,0),
+        mx2_(voteClasses,0),
+        my2_(voteClasses,0),
+        votesCount_(voteClasses,0),
+        votes_(voteClasses,voteVector())
+
     {
         dthreashold2_ = 100*100;
         pointCount_=0;
         voteClasses_ = voteClasses;
+        variance_ = -1;
+        aggregationValid_ = true;
 
-        for(int i=0 ; i < voteClasses_; i++){
-            votes_.push_back(voteVector());
-        }
     }
 
     void Clear()
     {
+
+       mx_.assign(mx_.size(),0);
+       my_.assign(my_.size(),0);
+       mx2_.assign(mx2_.size(),0);
+       my2_.assign(my2_.size(),0);
+       votesCount_.assign(votesCount_.size(),0);
+
        for(int i=0 ; i < voteClasses_; i++){
            votes_[i].clear();
+
        }
        pointCount_ = 0;
+       variance_ = -1;
+       aggregationValid_ = true;
     }
 
     const_iterator begin(unsigned char voteClass) const{
@@ -60,7 +76,7 @@ public:
 
     void Compress();
 
-    double VoteVariance() const;
+    double VoteVariance();
 
     bool Serialize(std::ostream &stream) const;
     bool SerializeChar(std::ostream &stream) const;
@@ -72,6 +88,7 @@ public:
     }
 
 private:
+
 
     unsigned int norm2(int x, int y) const
     {
@@ -85,10 +102,18 @@ private:
 
     //very memory-unfriendly; in a cv::Mat, quantized?
     std::vector< voteVector > votes_;
+    std::vector<element_count> votesCount_;
+    std::vector< double > mx_;
+    std::vector< double > mx2_;
+    std::vector< double > my_;
+    std::vector< double > my2_;
 
     int dthreashold2_;
     unsigned char voteClasses_;
     element_count pointCount_;
+
+    double variance_;
+    bool aggregationValid_;
 
 };
 

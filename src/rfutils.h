@@ -19,7 +19,8 @@ public:
     static void splitRandom(Random &random,
                             DepthFileBasedImageDB &db,
                             std::auto_ptr<OutputDB> &train,
-                            std::auto_ptr<OutputDB> &test)
+                            std::auto_ptr<OutputDB> &test,
+                            double trainRate = 0.5)
     {
         std::vector<DepthFileBasedImageDB::index_type> train_ind;
         std::vector<DepthFileBasedImageDB::index_type> test_ind;
@@ -28,7 +29,7 @@ public:
         DepthFileBasedImageDB::fileindex_type fi = 0;
 
         for(int i=0; i< db.imageCount(); i++){
-            if(random.NextDouble()<0.5){
+            if(random.NextDouble()<trainRate){
                 fi = db.getImageIdx(pi);
                 while(db.getImageIdx(pi) == fi) //optimal eval expected
                 {

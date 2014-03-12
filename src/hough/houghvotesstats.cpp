@@ -44,7 +44,7 @@ void HoughVotesStats::Aggregate(const cv::Point2i &abs, const VotesStats& stats)
     for(VotesStats::const_iterator i = stats.begin(voteClass_); i!= stats.end(voteClass_); i++){
         tmp = abs+(*i);
 
-        if(tmp.x < 0 | tmp.y < 0 | tmp.x >= mat_.cols | tmp.y >= mat_.rows)
+        if(tmp.x < 0 | tmp.y < 0 | tmp.x >= mat_.rows | tmp.y >= mat_.cols)
         {
             outOfBoundaries_++;
         }

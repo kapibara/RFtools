@@ -26,7 +26,7 @@ public:
     }
 
 
-    virtual double ComputeInformationGain(const ClassStats& p, const ClassStats& l, const ClassStats& r)
+    virtual double ComputeInformationGain(ClassStats& p, ClassStats& l, ClassStats& r)
     {
 
         double entropyBefore = p.Entropy();

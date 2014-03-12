@@ -198,7 +198,7 @@ void ClassStats::Aggregate(const ClassStats& aggregator)
     }
 
 #ifdef ENABLE_OVERFLOW_CHECKS
-    if ((sampleCount_+aggregator.sampleCount_)<sampleCount_){
+    if (sampleCount_>sampleCount_-aggregator.sampleCount_){
         std::cerr << "ClassStats::Aggregate(const ClassStats& aggregator):stats overflow" << std::endl;
         std::cerr.flush();
     }
