@@ -7,6 +7,8 @@
 
 #include "Interfaces.h"
 #include "arraylist.h"
+#include "subsampler.h"
+#include "imagecache.h"
 
 /*DB interface required to compute depth features*/
 
@@ -50,37 +52,6 @@ public:
     virtual unsigned int clearCacheCallCount() = 0;
 };
 
-
-
-class Cache
-{
-public:
-    unsigned int Count() const{
-        return subindex_.size();
-    }
-
-    void addToCache(const std::string &file);
-
-    bool getImage(fileindex_type imgindex, cv::Mat &image);
-
-    fileindex_type imageCount() const
-    {
-        return files_.size();
-    }
-
-    unsigned int clearCacheCallCount(){
-        unsigned int tmp = cachCallCount_;
-        cachCallCount_ = 0;
-        return tmp;
-    }
-
-private:
-    std::vector<std::string> files_;
-    unsigned int cachCallCount_;
-    cv::Mat cached_;
-    fileindex_type previous_;
-};
-
 class SubindexFileBasedImageDB: public DepthFileBasedImageDB
     {
     public:
@@ -98,6 +69,10 @@ class SubindexFileBasedImageDB: public DepthFileBasedImageDB
 
     bool getDataPoint(index_type i, cv::Mat &img, cv::Point2i &coordinate){
         return source_.getDataPoint(subindex_[i],img,coordinate);
+    }
+
+    unsigned int Count() const{
+        return subindex_.size();
     }
 
     std::string imageIdx2Filename(fileindex_type i) const{
@@ -138,6 +113,12 @@ public:
 
     virtual bool loadDB(const std::string &filename, GeneralStringParser &stringParser);
 
+    void setSubsampler(Subsampler *sub)
+    {
+        delete sub_;
+        sub_ = sub;
+
+    }
     bool getDataPoint(index_type i, cv::Mat &img, cv::Point2i &coordinate);
     bool getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate);
 
@@ -148,11 +129,11 @@ public:
 
     std::string imageIdx2Filename(fileindex_type i) const
     {
-        return files_[i];
+        return cache_.imageIdx2Filename(i);
     }
 
     fileindex_type imageCount() const{
-        return files_.size();
+        return cache_.imageCount();
     }
 
     index_type Count() const{
@@ -194,7 +175,8 @@ private:
     /*simple imlementation to push pixels to an array; called from postprocessFile()*/
     unsigned int cachCallCount_;
 
-    Cache cache_;
+    ICache cache_;
+    Subsampler *sub_;
     std::string path_;
 
     index_type elementCount_;
