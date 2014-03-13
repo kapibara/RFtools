@@ -41,8 +41,6 @@ LocalCache::LocalCache(const std::string &name, const std::string &localtmpdir)
 
 LocalCache::~LocalCache()
 {
-    std::cout << "LocalCache::~LocalCache()" << std::endl;
-
     log_.close();
     for(int i=0; i<openStreams_.size(); i++){
         if((openStreams_[i])->is_open()){

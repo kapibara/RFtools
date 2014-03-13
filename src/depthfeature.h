@@ -83,7 +83,7 @@ private:
     }
 
     static float bg(){
-        return 200;
+        return 300;
     }
 
     cv::Point2i u_,v_;

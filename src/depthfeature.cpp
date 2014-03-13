@@ -11,9 +11,9 @@ DepthFeatureFactory::DepthFeatureFactory(const DepthFeatureParameters &param):pa
 
 DepthFeature DepthFeatureFactory::getDepthFeature(MicrosoftResearch::Cambridge::Sherwood::Random &random){
     cv::Point2i u = cv::Point2i(floor((random.NextDouble()*2*param_.uvlimit_-param_.uvlimit_)),
-                                floor((random.NextDouble()*2*param_.uvlimit_-param_.uvlimit_)));
+                                floor((random.NextDouble()*param_.uvlimit_)));
     cv::Point2i v = cv::Point2i(floor((random.NextDouble()*2*param_.uvlimit_-param_.uvlimit_)),
-                                floor((random.NextDouble()*2*param_.uvlimit_-param_.uvlimit_)));
+                                floor(-(random.NextDouble()*param_.uvlimit_)));
 
     return DepthFeature(u,v,param_.zeroplane_);
 }

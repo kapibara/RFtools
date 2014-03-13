@@ -23,7 +23,9 @@ endif()
 
 find_package(Boost REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(STXXL REQUIRED)
+if(WIN32)
+    find_package(STXXL REQUIRED)
+endif()
 
 include_directories(${HOME}/src)
 include_directories(${Forest_DIR})

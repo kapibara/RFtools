@@ -65,15 +65,15 @@ int main(int argc, char **argv)
         if (argc<3){
 
             DepthFeatureParameters featureParams;
-            featureParams.uvlimit_ = 20;
+            featureParams.uvlimit_ = 10;
             featureParams.zeroplane_ = 300;
 
             log << featureParams;
 
             Parameter<int> T(1, "No. of trees in the forest.");
-            Parameter<int> D(5, "Maximum tree levels.");
-            Parameter<int> F(500, "No. of candidate feature response functions per split node.");
-            Parameter<int> L(40, "No. of candidate thresholds per feature response function.");
+            Parameter<int> D(3, "Maximum tree levels.");
+            Parameter<int> F(1000, "No. of candidate feature response functions per split node.");
+            Parameter<int> L(20, "No. of candidate thresholds per feature response function.");
             Parameter<bool> verbose(true,"Enables verbose progress indication.");
 
             log << T << D << F << L << std::endl;

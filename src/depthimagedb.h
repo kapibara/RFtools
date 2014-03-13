@@ -110,6 +110,10 @@ class DepthFileBasedImageDBImpl: public DepthFileBasedImageDB
 public:
     DepthFileBasedImageDBImpl(const std::string &base = "",
                               bool constImgSize = false);
+    ~DepthFileBasedImageDBImpl()
+    {
+        delete cache_;
+    }
 
     virtual bool loadDB(const std::string &filename, GeneralStringParser &stringParser);
 
@@ -130,11 +134,11 @@ public:
 
     std::string imageIdx2Filename(fileindex_type i) const
     {
-        return cache_.imageIdx2Filename(i);
+        return cache_->imageIdx2Filename(i);
     }
 
     fileindex_type imageCount() const{
-        return cache_.imageCount();
+        return cache_->imageCount();
     }
 
     index_type Count() const{
@@ -177,7 +181,7 @@ private:
     /*simple imlementation to push pixels to an array; called from postprocessFile()*/
     unsigned int cachCallCount_;
 
-    ICache cache_;
+    ICache *cache_;
     Subsampler *sub_;
     std::string path_;
 
