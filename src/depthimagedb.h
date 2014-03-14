@@ -175,7 +175,7 @@ private:
     /*simple imlementation to push pixels to an array; called from postprocessFile()*/
     unsigned int cachCallCount_;
 
-    ICache cache_;
+    ICache *cache_;
     Subsampler *sub_;
     std::string path_;
 
