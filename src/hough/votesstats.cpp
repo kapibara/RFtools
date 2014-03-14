@@ -3,20 +3,20 @@
 void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection& data, unsigned int index)
 {
     DepthDBWithVotes &db = dynamic_cast<DepthDBWithVotes &>(data);
-    std::vector<cv::Point2i> vote;
     variance_ = -1; //invalidate variance
     int x2,y2;
 
-    db.getDataPointVote(index,vote);
+    db.getDataPointVote(index,container_);
 
     /*we suppose: voteClasses_ <= vote.size()*/
 
     try{
         for(int i=0; i<voteClasses_; i++){
-            x2 = (vote[i].x)*(vote[i].x);
-            y2 = (vote[i].y)*(vote[i].y);
+            x2 = (container_[i].x)*(container_[i].x);
+            y2 = (container_[i].y)*(container_[i].y);
             if (x2+y2 < dthreashold2_){
-                votes_[i].push_back(vote[i]);
+                if(fullStats_)
+                    votes_[i].push_back(container_[i]);
                 votesCount_[i]++;
                 /*pre-compute variance*/
 
@@ -30,8 +30,8 @@ void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCol
         std::cerr.flush();
     }
 #endif
-                mx_[i] += vote[i].x;
-                my_[i] += vote[i].y;
+                mx_[i] += container_[i].x;
+                my_[i] += container_[i].y;
                 mx2_[i] += x2;
                 my2_[i] += y2;
             }
@@ -97,6 +97,8 @@ void VotesStats::Compress()
 
 bool VotesStats::SerializeChar(std::ostream &stream) const
 {
+    std::cerr << "SerializeChar is called..." << std::endl;
+
     std::ostringstream ss;
     ss << pointCount_ << std::endl;
     ss << (int)voteClasses_ << std::endl;

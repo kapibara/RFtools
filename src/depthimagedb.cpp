@@ -2,24 +2,6 @@
 
 #include <fstream>
 
-void SimpleCache::addToCache(const std::string &file)
-{
-    files_.push_back(file);
-}
-
-bool SimpleCache::getImage(fileindex_type imageindex, cv::Mat &image)
-{
-    if (imageindex != previous_){
-        cachCallCount_++;
-        cached_ = cv::imread(files_[imageindex],-1);
-        previous_ = imageindex;
-    }
-
-    image = cached_;
-
-    return true;
-}
-
 DepthFileBasedImageDBImpl::DepthFileBasedImageDBImpl(const std::string &base,
                                              bool constImgSize)
 {
@@ -27,6 +9,7 @@ DepthFileBasedImageDBImpl::DepthFileBasedImageDBImpl(const std::string &base,
     elementCount_ = 0;
     constImgSize_ = constImgSize;
     cachCallCount_ = 0;
+    cache_ = new InMemoryCache();
     sub_ = new StubSubsampler();
 }
 
@@ -47,7 +30,7 @@ bool DepthFileBasedImageDBImpl::getDataPoint(unsigned int i, cv::Mat &img, cv::P
     }
 
 
-    cache_.getImage(pointsIndex_[i].first,img);
+    cache_->getImage(pointsIndex_[i].first,img);
 
 
     coordinate = index2point(pointsIndex_[i].second,cv::Size(img.cols,img.rows));
@@ -62,7 +45,7 @@ bool DepthFileBasedImageDBImpl::getDataPoint(index_type i, std::string &file, cv
         return false;
     }
 
-    file = cache_.imageIdx2Filename(pointsIndex_[i].first);
+    file = cache_->imageIdx2Filename(pointsIndex_[i].first);
 
     if(constImgSize_){
         coordinate = index2point(pointsIndex_[i].second,imgSize_);
@@ -70,7 +53,7 @@ bool DepthFileBasedImageDBImpl::getDataPoint(index_type i, std::string &file, cv
     }
 
     cv::Mat img;
-    cache_.getImage(pointsIndex_[i].first,img);
+    cache_->getImage(pointsIndex_[i].first,img);
 
     coordinate = index2point(pointsIndex_[i].second,cv::Size(img.cols,img.rows));
 
@@ -102,7 +85,7 @@ void DepthFileBasedImageDBImpl::readFiles(const std::string &file, GeneralString
 
                 std::cout << "reading file: " << filename << std::endl;
 
-                cache_.addToCache(filename);
+                cache_->addToCache(filename);
                 image = cv::imread(filename,-1);
 
                 if (elementCount_ == 0){
@@ -154,7 +137,7 @@ bool DepthFileBasedImageDBImpl::postprocessFile(const cv::Mat &mat,GeneralString
 
 void DepthFileBasedImageDBImpl::push_pixel(unsigned short index){
     try{
-        pointsIndex_.push_back(filebased_type(cache_.imageCount()-1 ,index));
+        pointsIndex_.push_back(filebased_type(cache_->imageCount()-1 ,index));
     }catch(std::bad_alloc &e){
         std::cerr << "bad allocation pointsIndex_:" << pointsIndex_.vector_size() << std::endl;
     }

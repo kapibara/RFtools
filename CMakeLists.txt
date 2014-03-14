@@ -23,7 +23,9 @@ endif()
 
 find_package(Boost REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(STXXL REQUIRED)
+if(WIN32)
+    find_package(STXXL REQUIRED)
+endif()
 
 include_directories(${HOME}/src)
 include_directories(${Forest_DIR})
@@ -35,8 +37,10 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 #message("Boost_LIBRARY_DIRS = ${Boost_LIBRARY_DIRS}")
 
-set(CMAKE_CXX_FLAGS "-pg ${CMAKE_CXX_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS "-pg ${CMAKE_EXE_LINKER_FLAGS}")
+set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+
+#message(STATUS "${CMAKE_CXX_FLAGS}=${${CMAKE_CXX_FLAGS}}")
 
 if(WIN32)
     set(Boost_LIBS libboost_filesystem-vc100-mt-1_54)

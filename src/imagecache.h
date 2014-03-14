@@ -14,7 +14,7 @@ public:
     virtual bool getImage(fileindex_type imgindex, cv::Mat &image) = 0;
     virtual fileindex_type imageCount() const = 0;
     virtual std::string imageIdx2Filename(fileindex_type i) const = 0;
-    virtual int clearCacheCallCount() = 0;
+    virtual unsigned int clearCacheCallCount() = 0;
 };
 
 class InMemoryCache: public ICache
@@ -32,7 +32,7 @@ public:
     std::string imageIdx2Filename(fileindex_type i) const{
         return filenames_[i];
     }
-    int clearCacheCallCount(){
+    unsigned int clearCacheCallCount(){
         unsigned int tmp = cachCallCount_;
         cachCallCount_ = 0;
         return tmp;
@@ -40,7 +40,6 @@ public:
 
 private:
     unsigned int cachCallCount_;
-    unsigned int maxCapacity_;
     std::vector<cv::Mat> mat_;
     std::vector<std::string> filenames_;
 };

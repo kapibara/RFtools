@@ -23,6 +23,7 @@ public:
         mx2_(voteClasses,0),
         my2_(voteClasses,0),
         votesCount_(voteClasses,0),
+        container_(voteClasses),
         votes_(voteClasses,voteVector())
 
     {
@@ -31,6 +32,7 @@ public:
         voteClasses_ = voteClasses;
         variance_ = -1;
         aggregationValid_ = true;
+        fullStats_ = true;
 
     }
 
@@ -68,6 +70,12 @@ public:
     {
         return pointCount_;
     }
+
+    void FullStats(bool compute)
+    {
+        fullStats_ = compute;
+    }
+
 
     int Classes() const
     {
@@ -107,10 +115,12 @@ private:
     std::vector< double > mx2_;
     std::vector< double > my_;
     std::vector< double > my2_;
+    std::vector<cv::Point2i> container_;
 
     int dthreashold2_;
     unsigned char voteClasses_;
     element_count pointCount_;
+    bool fullStats_;
 
     double variance_;
     bool aggregationValid_;

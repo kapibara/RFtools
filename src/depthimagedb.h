@@ -110,6 +110,10 @@ class DepthFileBasedImageDBImpl: public DepthFileBasedImageDB
 public:
     DepthFileBasedImageDBImpl(const std::string &base = "",
                               bool constImgSize = false);
+    ~DepthFileBasedImageDBImpl()
+    {
+        delete cache_;
+    }
 
     virtual bool loadDB(const std::string &filename, GeneralStringParser &stringParser);
 
@@ -123,17 +127,18 @@ public:
     bool getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate);
 
     fileindex_type getImageIdx(index_type i) const
+
     {
         return pointsIndex_[i].first;
     }
 
     std::string imageIdx2Filename(fileindex_type i) const
     {
-        return cache_.imageIdx2Filename(i);
+        return cache_->imageIdx2Filename(i);
     }
 
     fileindex_type imageCount() const{
-        return cache_.imageCount();
+        return cache_->imageCount();
     }
 
     index_type Count() const{
@@ -151,6 +156,7 @@ protected:
 
     /*redefine this function to add aditional parts of the database*/
     virtual bool postprocessFile(const cv::Mat &image,GeneralStringParser &parser);
+
 
     void push_pixel(unsigned short index);
 
