@@ -113,6 +113,7 @@ public:
     ~DepthFileBasedImageDBImpl()
     {
         delete cache_;
+        delete sub_;
     }
 
     virtual bool loadDB(const std::string &filename, GeneralStringParser &stringParser);

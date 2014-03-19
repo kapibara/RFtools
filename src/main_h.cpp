@@ -12,7 +12,9 @@
 #include "parameter.h"
 #include "localcache.h"
 #include "TrainingParameters.h"
+#include "stubtrainingcontext.h"
 #include "hough/houghtrainingcontext.h"
+#include "stubstats.h"
 //#include "classification/classstats.h"
 #include "string2number.hpp"
 #include "rfutils.h"
@@ -42,7 +44,7 @@ int main(int argc, char **argv)
         Random random;
         time_t start,end;
         ProgressStream progress(log,Verbose);
-        std::auto_ptr<Forest<DepthFeature, VotesStats> > forest;
+        std::auto_ptr<Forest<DepthFeature, StubStats> > forest;
         std::auto_ptr<DepthDBWithVotesSubindex> test;
         std::auto_ptr<DepthDBWithVotesSubindex> train;
 
@@ -65,7 +67,7 @@ int main(int argc, char **argv)
         if (argc<3){
 
             DepthFeatureParameters featureParams;
-            featureParams.uvlimit_ = 10;
+            featureParams.uvlimit_ = 30;
             featureParams.zeroplane_ = 300;
 
             log << featureParams;
@@ -86,10 +88,12 @@ int main(int argc, char **argv)
             trainingParameters.Verbose = verbose.value();
 
             DepthFeatureFactory factory(featureParams);
-            HoughTrainingContext<DepthFeature> context(db.voteClassCount(),factory);
+//            HoughTrainingContext context(db.voteClassCount(),factory);
+            std::ostream &features = cache.openBinStream("features");
+            StubTrainingContext context(factory,trainingParameters,features);
 
             time(&start);
-            forest = ForestTrainer<DepthFeature, VotesStats>::TrainForest (
+            forest = ForestTrainer<DepthFeature, StubStats>::TrainForest (
                 random, trainingParameters, context, db ,&progress);
             time(&end);
             double dif = difftime (end,start);
@@ -104,7 +108,7 @@ int main(int argc, char **argv)
         }else{
 
             std::ifstream in(argv[2],std::ios_base::binary);
-            forest = Forest<DepthFeature, VotesStats>::Deserialize(in);
+            forest = Forest<DepthFeature, StubStats>::Deserialize(in);
 
             log << "forest deserialized" << std::endl;
         }
@@ -128,7 +132,7 @@ int main(int argc, char **argv)
 
         log << "full stats vector created" << std::endl;
         log << "image count: " << test->imageCount() << std::endl;
-
+/*
         for(int i=0; i<test->Count(); i++){
             test->getDataPoint(i,tmpstr,current);
 
@@ -172,11 +176,11 @@ int main(int argc, char **argv)
             }
         }
 
-        log << "results serialized" << std::endl;
+        log << "results serialized" << std::endl;*/
 
 
     }catch(std::exception e){
-        std::cerr << "exception caught" << e.what() << std::endl;
+        std::cerr << "exception caught: " << e.what() << std::endl;
         std::cerr.flush();
     }
 }

@@ -107,6 +107,7 @@ void DepthFileBasedImageDBImpl::readFiles(const std::string &file, GeneralString
         }
     }
     input.close();
+
 }
 
 bool DepthFileBasedImageDBImpl::postprocessFile(const cv::Mat &mat,GeneralStringParser &parser){
@@ -136,6 +137,7 @@ bool DepthFileBasedImageDBImpl::postprocessFile(const cv::Mat &mat,GeneralString
 }
 
 void DepthFileBasedImageDBImpl::push_pixel(unsigned short index){
+
     try{
         pointsIndex_.push_back(filebased_type(cache_->imageCount()-1 ,index));
     }catch(std::bad_alloc &e){

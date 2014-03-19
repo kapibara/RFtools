@@ -24,6 +24,7 @@ public:
     void addToCache(const std::string &file);
     bool getImage(fileindex_type imgindex, cv::Mat &image){
         image = mat_[imgindex];
+        return true;
     }
 
     fileindex_type imageCount() const{

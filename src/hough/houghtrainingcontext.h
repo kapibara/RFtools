@@ -6,8 +6,8 @@
 #include "depthfeature.h"
 #include "hough/votesstats.h"
 
-template <class F>
-class HoughTrainingContext: public MicrosoftResearch::Cambridge::Sherwood::ITrainingContext<F,VotesStats>
+
+class HoughTrainingContext: public MicrosoftResearch::Cambridge::Sherwood::ITrainingContext<DepthFeature,VotesStats>
 {
 public:
     HoughTrainingContext(unsigned char nClasses,DepthFeatureFactory &factory):factory_(factory)
@@ -15,17 +15,14 @@ public:
         nClasses_ = nClasses;
     }
 
-    virtual F GetRandomFeature(MicrosoftResearch::Cambridge::Sherwood::Random& random)
-    {
-        return factory_.getDepthFeature(random);
-    }
+    DepthFeature GetRandomFeature(MicrosoftResearch::Cambridge::Sherwood::Random& random);
 
-    virtual VotesStats GetStatisticsAggregator()
+    VotesStats GetStatisticsAggregator()
     {
         return VotesStats(nClasses_);
     }
 
-    virtual double ComputeInformationGain(VotesStats& parent, VotesStats& leftChild, VotesStats& rightChild)
+    double ComputeInformationGain(VotesStats& parent, VotesStats& leftChild, VotesStats& rightChild)
     {
         double lvv = leftChild.VoteVariance();
         double rvv = rightChild.VoteVariance();
@@ -39,7 +36,7 @@ public:
         return ((parent.VoteVariance() - lvv) - rvv);
     }
 
-    virtual bool ShouldTerminate(const VotesStats& parent, const VotesStats& leftChild, const VotesStats& rightChild, double gain)
+    bool ShouldTerminate(const VotesStats& parent, const VotesStats& leftChild, const VotesStats& rightChild, double gain)
     {
      /*    std::cerr << "vote variance: " << parent.VoteVariance() << std::endl;
         std::cerr << "lvv: " << leftChild.VoteVariance() << std::endl;
@@ -53,6 +50,7 @@ public:
 
 private:
     DepthFeatureFactory &factory_;
+
     unsigned char nClasses_;
 };
 

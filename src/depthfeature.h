@@ -5,6 +5,7 @@
 #include "Random.h"
 
 #include <iostream>
+#include <ostream>
 #include <opencv2/opencv.hpp>
 
 class DepthFeature;
@@ -35,6 +36,8 @@ public:
     DepthFeature getDepthFeature(MicrosoftResearch::Cambridge::Sherwood::Random &random);
 
     void setParameters(const DepthFeatureParameters &params) {param_ = params;}
+
+    DepthFeatureParameters getParameters();
 
 private:
     DepthFeatureParameters param_;
