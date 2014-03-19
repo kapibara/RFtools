@@ -48,6 +48,9 @@ public:
         return gain < 0.01 | (leftChild.Count() < 100) | (rightChild.Count() < 100);
     }
 
+    virtual void setCurrentNode(int nodeIndex){}
+
+
 private:
     DepthFeatureFactory &factory_;
 

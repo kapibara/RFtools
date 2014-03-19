@@ -56,6 +56,10 @@ public:
         return result;
     }
 
+    virtual void setCurrentNode(int nodeIndex){
+
+    }
+
 private:
 
     unsigned short nClasses_;

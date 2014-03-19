@@ -6,17 +6,22 @@
 #include "arraylist.h"
 
 #include <istream>
+#include <vector>
 
 class FeaturePool
 {
 public:
     FeaturePool(std::istream &input): in_(input)
     {
-        input.read((char *)fpnode_,sizeof(fpnode_));
-        input.read((char *)maxDecisionLevel_, sizeof(maxDecisionLevel_));
+        in_.read((char *)&fpnode_,sizeof(fpnode_));
+        in_.read((char *)&maxDecisionLevel_, sizeof(maxDecisionLevel_));
         readFeatures();
         currentNode_ = 0;
         currentFeature_ = 0;
+    }
+
+    int featuresPerNode(){
+        return fpnode_;
     }
 
     DepthFeature getFeature(unsigned int nodeIndex);
@@ -30,7 +35,7 @@ private:
     int maxDecisionLevel_;
     int currentNode_;
     int currentFeature_;
-    ArrayList<DepthFeature *> features_;
+    std::vector<DepthFeature *> features_;
 };
 
 

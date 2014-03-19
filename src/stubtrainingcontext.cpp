@@ -4,6 +4,7 @@ DepthFeature StubTrainingContext::GetRandomFeature(MicrosoftResearch::Cambridge:
 {
     DepthFeature f = factory_.getDepthFeature(random);
 
+
     f.Serialize(out_);
 
     return f;

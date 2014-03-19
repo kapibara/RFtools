@@ -8,7 +8,7 @@
 
 namespace MRS = MicrosoftResearch::Cambridge::Sherwood;
 
-class StubTrainingContext:public  MRS::ITrainingContext<DepthFeature,StubStats>
+class StubTrainingContext: public  MRS::ITrainingContext<DepthFeature,StubStats>
 {
 public:
     StubTrainingContext(DepthFeatureFactory &factory, const MRS::TrainingParameters &params, std::ostream &output): out_(output), factory_(factory)
@@ -37,8 +37,16 @@ public:
         return false;
     }
 
+    void setCurrentNode(int nodeIndex)
+    {
+        currentNode_ = nodeIndex;
+        out_.write((const char *)(&currentNode_),sizeof(currentNode_));
+    }
+
+
 private:
     DepthFeatureFactory &factory_;
+    int currentNode_;
     std::ostream &out_;
 };
 

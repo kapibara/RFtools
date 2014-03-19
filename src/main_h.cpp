@@ -18,8 +18,12 @@
 //#include "classification/classstats.h"
 #include "string2number.hpp"
 #include "rfutils.h"
+#include "featurepool.h"
+#include "hough/pooledhoughtrainingcontext.h"
 
 #include <time.h>
+
+//#define FEATURE_GENERATION
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 
@@ -29,6 +33,11 @@ int main(int argc, char **argv)
     std::cout << "starting the program" << std::endl;
 
     LocalCache cache("DepthHOUGH","/home/kuznetso/tmp");
+
+#ifndef FEATURE_GENERATION
+    std::ifstream in("/home/kuznetso/tmp/DepthHOUGH/19_18_08_56/features");
+    FeaturePool pool(in);
+#endif
 
     std::cout << "arg1: " << argv[1] << std::endl;
 
@@ -44,12 +53,16 @@ int main(int argc, char **argv)
         Random random;
         time_t start,end;
         ProgressStream progress(log,Verbose);
+#ifdef FEATURE_GENERATION
         std::auto_ptr<Forest<DepthFeature, StubStats> > forest;
+#else
+        std::auto_ptr<Forest<DepthFeature, VotesStats> > forest;
+#endif
         std::auto_ptr<DepthDBWithVotesSubindex> test;
         std::auto_ptr<DepthDBWithVotesSubindex> train;
 
         if (argc<2){
-            std::cout << "exec <db file>" << std::endl;
+            std::cout << "exec <db file> <feature file>" << std::endl;
         }
 
         db.loadDB(argv[1]);
@@ -67,15 +80,15 @@ int main(int argc, char **argv)
         if (argc<3){
 
             DepthFeatureParameters featureParams;
-            featureParams.uvlimit_ = 30;
+            featureParams.uvlimit_ = 40;
             featureParams.zeroplane_ = 300;
 
             log << featureParams;
 
             Parameter<int> T(1, "No. of trees in the forest.");
-            Parameter<int> D(3, "Maximum tree levels.");
-            Parameter<int> F(1000, "No. of candidate feature response functions per split node.");
-            Parameter<int> L(20, "No. of candidate thresholds per feature response function.");
+            Parameter<int> D(8, "Maximum tree levels.");
+            Parameter<int> F(2000, "No. of candidate feature response functions per split node.");
+            Parameter<int> L(10, "No. of candidate thresholds per feature response function.");
             Parameter<bool> verbose(true,"Enables verbose progress indication.");
 
             log << T << D << F << L << std::endl;
@@ -88,13 +101,23 @@ int main(int argc, char **argv)
             trainingParameters.Verbose = verbose.value();
 
             DepthFeatureFactory factory(featureParams);
+
 //            HoughTrainingContext context(db.voteClassCount(),factory);
             std::ostream &features = cache.openBinStream("features");
-            StubTrainingContext context(factory,trainingParameters,features);
+#ifdef FEATURE_GENERATION
+            StubTrainingContext context(factory, trainingParameters, features);
+#else
+            PooledHoughTrainingContext context(db.voteClassCount(),pool);
+#endif
 
             time(&start);
+#ifdef FEATURE_GENERATION
             forest = ForestTrainer<DepthFeature, StubStats>::TrainForest (
                 random, trainingParameters, context, db ,&progress);
+#else
+            forest = ForestTrainer<DepthFeature, VotesStats>::TrainForest (
+                random, trainingParameters, context, db ,&progress);
+#endif
             time(&end);
             double dif = difftime (end,start);
 
@@ -105,13 +128,18 @@ int main(int argc, char **argv)
             forest->Serialize(out);
 
             log << "forest serialized" << std::endl;
-        }else{
+        }
+#ifndef FEATURE_GENERATION
+        else{
 
             std::ifstream in(argv[2],std::ios_base::binary);
-            forest = Forest<DepthFeature, StubStats>::Deserialize(in);
+
+
+            forest = Forest<DepthFeature, VotesStats>::Deserialize(in);
 
             log << "forest deserialized" << std::endl;
         }
+#endif
 
         std::vector<std::vector<int> > leafIndicesPerTree;
         forest->Apply(*test,leafIndicesPerTree,&progress);
