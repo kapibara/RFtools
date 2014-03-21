@@ -43,6 +43,9 @@ public:
         out_.write((const char *)(&currentNode_),sizeof(currentNode_));
     }
 
+    void collectStats(const DepthFeature &feature, float threashold, double gain)
+    {}
+
 
 private:
     DepthFeatureFactory &factory_;

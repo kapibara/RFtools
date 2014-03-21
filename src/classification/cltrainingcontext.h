@@ -60,6 +60,8 @@ public:
 
     }
 
+    virtual void collectStats(const DepthFeature &feature, float threashold, double gain){}
+
 private:
 
     unsigned short nClasses_;

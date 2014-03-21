@@ -142,6 +142,10 @@ public:
         return cache_->imageCount();
     }
 
+    cv::Size getSize() const{
+        return imgSize_;
+    }
+
     index_type Count() const{
         return pointsIndex_.size();
     }

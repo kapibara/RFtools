@@ -5,6 +5,7 @@ void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCol
     DepthDBWithVotes &db = dynamic_cast<DepthDBWithVotes &>(data);
     variance_ = -1; //invalidate variance
     int x2,y2;
+    bool acceptedOnce = false;
 
     db.getDataPointVote(index,container_);
 
@@ -12,6 +13,18 @@ void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCol
 
     try{
         for(int i=0; i<voteClasses_; i++){
+/*            if(container_[i].x < minx_[i]){
+                minx_[i] = container_[i].x;
+            }
+            if(container_[i].y < miny_[i]){
+                miny_[i] = container_[i].y;
+            }
+            if(container_[i].x > maxx_[i]){
+                maxx_[i] = container_[i].x;
+            }
+            if(container_[i].y > maxy_[i]){
+                maxy_[i] = container_[i].y;
+            }*/
             x2 = (container_[i].x)*(container_[i].x);
             y2 = (container_[i].y)*(container_[i].y);
             if (x2+y2 < dthreashold2_){
@@ -34,6 +47,7 @@ void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCol
                 my_[i] += container_[i].y;
                 mx2_[i] += x2;
                 my2_[i] += y2;
+                acceptedOnce = true;
             }
         }
     }catch(std::exception e){
@@ -46,7 +60,8 @@ void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCol
     }
 #endif
 
-    pointCount_++;
+    if (acceptedOnce)
+        pointCount_++;
 
 
 }
@@ -70,6 +85,18 @@ void VotesStats::Aggregate(const VotesStats& stats)
         std::cerr.flush();
     }
 #endif
+/*        if(stats.minx_[i] < minx_[i]){
+            minx_[i] = stats.minx_[i];
+        }
+        if(stats.miny_[i] < miny_[i]){
+            miny_[i] = stats.miny_[i];
+        }
+        if(stats.maxx_[i] > maxx_[i]){
+            maxx_[i] = stats.maxx_[i];
+        }
+        if(stats.maxy_[i] > maxy_[i]){
+            maxy_[i] = stats.maxy_[i];
+        }*/
         mx_[i] += stats.mx_[i];
         my_[i] += stats.my_[i];
         mx2_[i] += stats.mx2_[i];
@@ -84,6 +111,32 @@ void VotesStats::Aggregate(const VotesStats& stats)
 #endif
 
     pointCount_+=stats.pointCount_;
+}
+
+void VotesStats::toMatrices()
+{
+    std::vector<int> minx(voteClasses_,0),miny(voteClasses_,0), maxx(voteClasses_,0), maxy(voteClasses_,0);
+    cv::Mat tmp;
+
+    for(int i=0; i<voteClasses_; i++){
+
+        for(const_iterator j = begin(i); j!=end(i); j++ ){
+            if ((*j).x<minx[i]){
+                minx[i] = (*j).x;
+            }
+            if((*j).y<miny[i]){
+                miny[i] = (*j).y;
+            }
+            if((*j).x>maxx[i]){
+                maxx[i] = (*j).x;
+            }
+            if((*j).y>maxy[i]){
+                maxy[i] = (*j).y;
+            }
+        }
+
+        tmp = cv::Mat(maxx[i]-minx[i]+1,maxy[i]-miny[i]+1,CV_8UC4);
+    }
 }
 
 void VotesStats::Compress()
@@ -177,8 +230,16 @@ double VotesStats::VoteVariance()
 
         for(int i=0; i<voteClasses_; i++){
 
-            mx = mx_[i]/votesCount_[i];
-            my = my_[i]/votesCount_[i];
+            if(votesCount_[i] == 0){
+
+                mx = 0;
+                my = 0;
+
+            }else{
+
+                mx = mx_[i]/votesCount_[i];
+                my = my_[i]/votesCount_[i];
+            }
 
 #ifdef ENABLE_OVERFLOW_CHECKS
     if (std::abs(mx_[i]) > (std::numeric_limits<double>::max()/std::abs(mx))){
@@ -203,6 +264,10 @@ double VotesStats::VoteVariance()
         }
 
         variance_ = fulld2;
+    }
+
+    if (isnan(variance_)){
+        std::cerr << "variance_: " << variance_ << std::endl;
     }
 
     return variance_;

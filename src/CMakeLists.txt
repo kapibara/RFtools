@@ -1,5 +1,6 @@
 set(EXECCL DepthRFCL)
 set(EXECH DepthRFHOUGH)
+set(FEATUREGEN FeatureGen)
 set(TESTS tests)
 
 set(CL_FOLDER classification)
@@ -31,7 +32,9 @@ set(GENERAL_HEADERS /
             imagecache.h /
             stubstats.h /
             stubtrainingcontext.h /
-            featurepool.h)
+            featurepool.h /
+            featureaccomulator.h /
+)
 
 set(CL_SOURCE ${CL_FOLDER}/depthdb.cpp /
             ${CL_FOLDER}/classstats.cpp /
@@ -59,7 +62,9 @@ set(GENERAL_SOURCE  /
                     imagecache.cpp /
                     stubstats.cpp /
                     stubtrainingcontext.cpp /
-                    featurepool.cpp)
+                    featurepool.cpp /
+                    featureaccomulator.cpp /
+)
 
 #required to see the code in QT creator only...
 set(FOREST ${Forest_DIR}/Forest.h /
@@ -77,12 +82,17 @@ set(FOREST ${Forest_DIR}/Forest.h /
 
 add_executable(${EXECCL} main_cl.cpp ${CL_SOURCE} ${CL_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
 add_executable(${EXECH} main_h.cpp ${HOUGH_SOURCE} ${HOUGH_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
-add_executable(${TESTS} tests.cpp ${CL_SOURCE} ${CL_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
+add_executable(${TESTS} tests.cpp ${CL_SOURCE} ${CL_HEADERS} ${HOUGH_SOURCE} ${HOUGH_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
+add_executable(${FEATUREGEN} featureGenerator.cpp ${GENERAL_SOURCE})
+
+
 
 target_link_libraries(${EXECCL} ${OpenCV_LIBS} ${Boost_LIBS})
 target_link_libraries(${EXECH} ${OpenCV_LIBS} ${Boost_LIBS})
 target_link_libraries(${TESTS} ${OpenCV_LIBS} ${Boost_LIBS})
+target_link_libraries(${FEATUREGEN} ${OpenCV_LIBS} ${Boost_LIBS})
 
 #install(TARGETS ${EXECCL} DESTINATION .)
 install(TARGETS ${EXECH} DESTINATION .)
 install(TARGETS ${TESTS} DESTINATION .)
+install(TARGETS ${FEATUREGEN} DESTINATION .)

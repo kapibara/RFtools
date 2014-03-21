@@ -26,20 +26,27 @@ void HoughVotesStats::Aggregate(const HoughVotesStats &stats)
         rows=1;
     }
 
-    unsigned int *thisptr,*statsptr;
+    unsigned int *thisptr;
+    const unsigned int *statsptr;
 
     for(int i=0; i<rows;i++){
         thisptr = mat_.ptr<unsigned int>(i);
-        statsptr = mat_.ptr<unsigned int>(i);
+        statsptr = stats.mat_.ptr<unsigned int>(i);
         for(int j=0; j<cols; j++){
             thisptr[j]+=statsptr[j];
         }
     }
 }
 
-void HoughVotesStats::Aggregate(const cv::Point2i &abs, const VotesStats& stats)
+bool HoughVotesStats::Aggregate(const cv::Point2i &abs, const VotesStats& stats)
 {
+    if(!mat_.isContinuous()){
+        std::cerr << "matrix is not continous" << std::endl;
+    }
+
     cv::Point2i tmp;
+    unsigned int *ptr = mat_.ptr<unsigned int>(0);
+    bool tooBigValues = false;
 
     for(VotesStats::const_iterator i = stats.begin(voteClass_); i!= stats.end(voteClass_); i++){
         tmp = abs+(*i);
@@ -50,9 +57,14 @@ void HoughVotesStats::Aggregate(const cv::Point2i &abs, const VotesStats& stats)
         }
         else
         {
-            mat_.at<unsigned int>(tmp.x,tmp.y)+=1;
+            if(tmp.x > 320 | tmp.y > 320){
+                tooBigValues = true;
+            }
+            mat_.at<unsigned int>(tmp.x ,tmp.y ) +=1;
         }
     }
+
+    return tooBigValues;
 }
 
 void HoughVotesStats::Aggregate(const cv::Point2i &abs, const cv::Point2i &vote)

@@ -1,5 +1,6 @@
 #include "classification/depthdb.h"
 #include "Random.h"
+#include "hough/votesstats.h"
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 using namespace std;
@@ -79,8 +80,18 @@ bool testDepthDBSubindex(DepthDBClassImage &db)
 
 int main(int argc, char **argv)
 {
-    DepthDBClassImage db;
+/*    DepthDBClassImage db;
     db.loadDB(argv[1]);
-    testDepthDBSubindex(db);
+    testDepthDBSubindex(db);*/
 
+    VotesStats stats(1);
+    DepthDBWithVotesImpl db;
+    db.loadDB(argv[1]);
+
+    //same image
+    stats.Aggregate(db,0);
+    stats.Aggregate(db,1);
+    stats.Aggregate(db,2);
+
+    std::cout << "VoteVariance: " << stats.VoteVariance() << std::endl;
 }

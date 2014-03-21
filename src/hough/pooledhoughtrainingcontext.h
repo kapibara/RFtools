@@ -3,6 +3,7 @@
 
 #include "featurepool.h"
 #include "votesstats.h"
+#include "featureaccomulator.h"
 
 namespace MRS = MicrosoftResearch::Cambridge::Sherwood;
 
@@ -15,9 +16,14 @@ public:
     {
         nClasses_ = nClasses;
         currentNode_ = 0;
+        accomulator_ = 0;
     }
 
     DepthFeature GetRandomFeature(MicrosoftResearch::Cambridge::Sherwood::Random& random);
+
+    void setFeatureAccomulator(FeatureAccomulator *ptr){
+        accomulator_ = ptr;
+    }
 
     VotesStats GetStatisticsAggregator()
     {
@@ -50,10 +56,24 @@ public:
         return gain < 0.01 | (leftChild.Count() < 100) | (rightChild.Count() < 100);
     }
 
-    virtual void setCurrentNode(int nodeIndex) {currentNode_ = nodeIndex;}
+    virtual void setCurrentNode(int nodeIndex) {
+        currentNode_ = nodeIndex;
+        if(accomulator_!=0){
+            accomulator_->setCurrentNode(nodeIndex);
+        }
+    }
+
+    virtual void collectStats(const DepthFeature&feature, float threashold, double gain)
+    {
+        if(accomulator_!=0){
+            accomulator_->addCurrentParameters(feature,threashold,gain);
+        }
+
+    }
 
 private:
     FeaturePool &pool_;
+    FeatureAccomulator *accomulator_;
     unsigned char nClasses_;
     int currentNode_;
 };

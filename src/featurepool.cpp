@@ -4,6 +4,8 @@
 
 DepthFeature FeaturePool::getFeature(unsigned int nodeIndex)
 {
+    std::cerr << "FeaturePool::getFeature" << std::endl;
+
     if(nodeIndex != currentNode_){
         currentNode_ = nodeIndex;
         if (currentFeature_ != fpnode_){
@@ -18,7 +20,14 @@ DepthFeature FeaturePool::getFeature(unsigned int nodeIndex)
     int feature = currentFeature_;
     currentFeature_++;
 
-    return features_[currentNode_][feature];
+    std::cerr << "node index: " << currentNode_ << " feature: " << feature << std::endl;
+    std::cerr << "max  index: " << features_.size() << std::endl;
+
+    DepthFeature d = features_[currentNode_][feature];
+
+    std::cerr << "FeaturePool::getFeature ended" << std::endl;
+
+    return d;
 }
 
 
@@ -31,6 +40,7 @@ void FeaturePool::readFeatures()
 
     for(unsigned int i=0; i< nodeCount; i++){
         in_.read((char *)&currentNode,sizeof(currentNode));
+        std::cerr << "current node: " << currentNode << std::endl;
         f = new DepthFeature[fpnode_];
         for(int j=0; j<fpnode_; j++){
             f[j].Deserialize(in_);

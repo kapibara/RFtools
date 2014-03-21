@@ -15,6 +15,11 @@ DepthFeature DepthFeatureFactory::getDepthFeature(MicrosoftResearch::Cambridge::
     cv::Point2i v = cv::Point2i(floor((random.NextDouble()*2*param_.uvlimit_-param_.uvlimit_)),
                                 floor(-(random.NextDouble()*param_.uvlimit_)));
 
+/*    cv::Point2i u = cv::Point2i(floor((random.NextDouble()*2*param_.uvlimit_-param_.uvlimit_)),
+                                floor((random.NextDouble()*param_.uvlimit_)));
+
+    cv::Point2i v = -u;*/
+
     return DepthFeature(u,v,param_.zeroplane_);
 }
 

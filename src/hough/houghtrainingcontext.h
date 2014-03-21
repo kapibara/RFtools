@@ -5,6 +5,9 @@
 
 #include "depthfeature.h"
 #include "hough/votesstats.h"
+#include "featureaccomulator.h"
+
+#include <ostream>
 
 
 class HoughTrainingContext: public MicrosoftResearch::Cambridge::Sherwood::ITrainingContext<DepthFeature,VotesStats>
@@ -13,9 +16,14 @@ public:
     HoughTrainingContext(unsigned char nClasses,DepthFeatureFactory &factory):factory_(factory)
     {
         nClasses_ = nClasses;
+        accomulator_ = 0;
     }
 
     DepthFeature GetRandomFeature(MicrosoftResearch::Cambridge::Sherwood::Random& random);
+
+    void setFeatureAccomulator(FeatureAccomulator *ptr){
+        accomulator_ = ptr;
+    }
 
     VotesStats GetStatisticsAggregator()
     {
@@ -43,16 +51,39 @@ public:
         std::cerr << "rvv: " << rightChild.VoteVariance() << std::endl;
         std::cerr << "lsize: " << leftChild.Size() << std::endl;
         std::cerr << "rsize: " << rightChild.Size() << std::endl;
-        std::cerr << "gain: " << gain << std::endl;*/
+        std::cerr << "gain: " << gain << std::endl;
+        if (out_!=0){
+            out_->write((const char *)&currentNode_, sizeof(currentNode_));
+            out_->write((const char *)&gain, sizeof(gain));
+        }*/
 
         return gain < 0.01 | (leftChild.Count() < 100) | (rightChild.Count() < 100);
     }
 
-    virtual void setCurrentNode(int nodeIndex){}
+    void setCurrentNode(int nodeIndex)
+    {
+        currentNode_ = nodeIndex;
+        if(accomulator_!=0){
+            accomulator_->setCurrentNode(nodeIndex);
+        }
+    }
+
+    void collectStats(const DepthFeature &feature, float threashold, double gain)
+    {
+        if(accomulator_!=0){
+            accomulator_->addCurrentParameters(feature,threashold,gain);
+        }
+
+    }
 
 
 private:
     DepthFeatureFactory &factory_;
+
+    int currentNode_;
+    FeatureAccomulator *accomulator_;
+
+//    std::ostream *out_;
 
     unsigned char nClasses_;
 };
