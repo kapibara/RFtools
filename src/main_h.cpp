@@ -20,6 +20,7 @@
 #include "rfutils.h"
 #include "featurepool.h"
 #include "hough/pooledhoughtrainingcontext.h"
+#include "nodedistributionimagestats.h"
 
 #include <time.h>
 
@@ -168,18 +169,27 @@ int main(int argc, char **argv)
 
         cv::Point2i current;
         std::string tmpstr;
-
+//        int badNode = 1022;
         std::vector< std::vector <HoughVotesStats> > fullStats;
+//        std::vector<NodeDistributionImagestats> nodeDist;
 
         for (int v = 0; v < test->voteClassCount(); v++){
             fullStats.push_back(std::vector<HoughVotesStats>());
+
             for(int i=0; i< test->imageCount(); i++){
-                fullStats.back().push_back(HoughVotesStats(cv::Size(320,240),v));
+                fullStats.back().push_back(HoughVotesStats(cv::Size(640,480),v));
             }
         }
-
+/*
+        for(int i=0; i< test->imageCount(); i++){
+            nodeDist.push_back(NodeDistributionImagestats(cv::Size(480,640),badNode));
+        }
+*/
         log << "full stats vector created" << std::endl;
         log << "image count: " << test->imageCount() << std::endl;
+
+
+
 
         for(int i=0; i<test->Count(); i++){
             test->getDataPoint(i,tmpstr,current);
@@ -187,6 +197,7 @@ int main(int argc, char **argv)
             for(int t=0; t<forest->TreeCount(); t++)
             {
                 if (leafIndicesPerTree[t][i]>0)
+//                    nodeDist[test->getImageIdx(i)].addPoint(current,leafIndicesPerTree[t][i]);
                     for(int v = 0; v < test->voteClassCount(); v++){
 
                         if (fullStats[v][test->getImageIdx(i)].Aggregate(current,forest->GetTree(t).GetNode(leafIndicesPerTree[t][i]).TrainingDataStatistics)){
@@ -199,10 +210,20 @@ int main(int argc, char **argv)
 
         log << "statistic aggregated" << std::endl;
 
+        std::string filename;
+/*        for(int i=0; i<nodeDist.size();i++){
+
+            filename = cache.base() + "pixDist" + num2str<int>(i) + ".png";
+            std::cerr << "serializing: " << filename << std::endl;
+            nodeDist[i].Serialize(filename);
+        }
+
+        log << "pixDist serialized" << std::endl; */
+
         std::vector<bool> seen(test->imageCount(),false);
         std::vector<cv::Point2i> votes(test->voteClassCount());
         cv::Point2i p;
-        std::string filename;
+
         std::ofstream *stream;
 
         for(int i=0; i<test->Count(); i++){

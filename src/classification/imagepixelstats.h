@@ -3,6 +3,7 @@
 
 #include <opencv2/opencv.hpp>
 #include "classstats.h"
+#include "colorgenerator.h"
 
 #include <map>
 #include <cmath>
@@ -25,14 +26,7 @@ public:
 
         if(palette_.empty()){
             clCount_ = stats.ClassCount();
-            int color_divs = floor(pow((double)clCount_,1/3.0))+1;
-            int r,g,b;
-            for (int i=0; i< clCount_; i++){
-                r = ((i)%(color_divs*color_divs))%color_divs+1;
-                g = ((i)%(color_divs*color_divs))/color_divs+1;
-                b = (i)/(color_divs*color_divs)+1;
-                palette_.push_back(cv::Vec3b(r*255/(color_divs),g*255/(color_divs),b*255/(color_divs)));
-            }
+            generatePalette(palette_,clCount_);
         }
 
         /*this is too much pixels; leads to the overflow

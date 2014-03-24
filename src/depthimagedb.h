@@ -157,23 +157,25 @@ public:
     }
 
 protected:
-    typedef std::pair<fileindex_type,unsigned short> filebased_type; // index -> (filename,i)
+    typedef unsigned int in_image_index;
+    typedef std::pair<fileindex_type,in_image_index> filebased_type; // index -> (filename,i)
+
 
     /*redefine this function to add aditional parts of the database*/
     virtual bool postprocessFile(const cv::Mat &image,GeneralStringParser &parser);
 
 
-    void push_pixel(unsigned short index);
+    void push_pixel(in_image_index index);
 
     filebased_type getIndex(index_type i) const{
         return pointsIndex_[i];
     }
 
-    unsigned short point2index(cv::Point2i p,cv::Size size) const{
-        return p.x+p.y*size.width;
+    in_image_index point2index(cv::Point2i p,cv::Size size) const{
+        return p.x +p.y*size.width;
     }
 
-    cv::Point2i index2point(unsigned short i,cv::Size size) const{
+    cv::Point2i index2point(in_image_index i,cv::Size size) const{
         return cv::Point2i(i % size.width, i / size.width);
     }
 

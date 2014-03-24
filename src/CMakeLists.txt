@@ -34,6 +34,8 @@ set(GENERAL_HEADERS /
             stubtrainingcontext.h /
             featurepool.h /
             featureaccomulator.h /
+            nodedistributionimagestats.h /
+            colorgenerator.h /
 )
 
 set(CL_SOURCE ${CL_FOLDER}/depthdb.cpp /
@@ -64,6 +66,8 @@ set(GENERAL_SOURCE  /
                     stubtrainingcontext.cpp /
                     featurepool.cpp /
                     featureaccomulator.cpp /
+                    nodedistributionimagestats.cpp /
+                    colorgenerator.cpp /
 )
 
 #required to see the code in QT creator only...

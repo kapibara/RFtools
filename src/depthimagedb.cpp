@@ -29,11 +29,10 @@ bool DepthFileBasedImageDBImpl::getDataPoint(unsigned int i, cv::Mat &img, cv::P
         return false;
     }
 
-
     cache_->getImage(pointsIndex_[i].first,img);
 
 
-    coordinate = index2point(pointsIndex_[i].second,cv::Size(img.cols,img.rows));
+    coordinate = index2point(pointsIndex_[i].second,img.size());
 
     return true;
 }
@@ -55,7 +54,7 @@ bool DepthFileBasedImageDBImpl::getDataPoint(index_type i, std::string &file, cv
     cv::Mat img;
     cache_->getImage(pointsIndex_[i].first,img);
 
-    coordinate = index2point(pointsIndex_[i].second,cv::Size(img.cols,img.rows));
+    coordinate = index2point(pointsIndex_[i].second,img.size());
 
     return true;
 }
@@ -89,8 +88,9 @@ void DepthFileBasedImageDBImpl::readFiles(const std::string &file, GeneralString
                 image = cv::imread(filename,-1);
 
                 if (elementCount_ == 0){
-                    if(constImgSize_)
-                        imgSize_ = cv::Size(image.cols,image.rows);
+                    if(constImgSize_){
+                        imgSize_ = image.size();
+                    }
                 }
 
                 if(constImgSize_){
@@ -113,21 +113,16 @@ void DepthFileBasedImageDBImpl::readFiles(const std::string &file, GeneralString
 bool DepthFileBasedImageDBImpl::postprocessFile(const cv::Mat &mat,GeneralStringParser &parser){
     int rows = mat.rows,cols = mat.cols;
     const unsigned short *dataptr;
-    cv::Size imgSize(mat.cols,mat.rows);
-
-    if (mat.isContinuous()){
-        cols *= rows;
-        rows = 1;
-    }
 
     for(int i=0; i<rows; i++){
 
         dataptr = mat.ptr<unsigned short>(i);
 
-        for(int j=0; j<cols; j++){
+        for(int j=0; j< cols; j++){
             if (dataptr[j]>0){
+                //cv::Point2i (x,y)
                 if(sub_->add(cv::Point2i(j,i),dataptr[j])){
-                    push_pixel(point2index(cv::Point2i(j,i),imgSize));
+                    push_pixel(point2index(cv::Point2i(j,i),mat.size()));
                 }
             }
         }
@@ -136,7 +131,7 @@ bool DepthFileBasedImageDBImpl::postprocessFile(const cv::Mat &mat,GeneralString
     return true;
 }
 
-void DepthFileBasedImageDBImpl::push_pixel(unsigned short index){
+void DepthFileBasedImageDBImpl::push_pixel(in_image_index index){
 
     try{
         pointsIndex_.push_back(filebased_type(cache_->imageCount()-1 ,index));
