@@ -19,14 +19,11 @@
 #include "string2number.hpp"
 #include "rfutils.h"
 #include "featurepool.h"
-#include "hough/pooledhoughtrainingcontext.h"
 #include "nodedistributionimagestats.h"
 
 #include <time.h>
 
-//#define FEATURE_GENERATION
-
-#define TRAIN_TEST_RANDOM
+//#define TRAIN_TEST_RANDOM
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 
@@ -45,28 +42,13 @@ int main(int argc, char **argv)
 
     std::ostream &log = cache.log();
 
-
-#ifndef FEATURE_GENERATION
-#ifndef TRAIN_TEST_RANDOM
-    // /home/kuznetso/tmp/DepthHOUGH/20_16_19_13/ --- full parameter set...
-    std::string filename = "/home/kuznetso/tmp/DepthHOUGH/21_17_52_31/features";
-    std::ifstream in(filename.c_str());
-    log << "reading features from " <<  filename << std::endl;
-    FeaturePool pool(in);
-#endif
-#endif
-
     try{
         DepthDBWithVotesImpl db;
         Random random;
         time_t start,end;
         ProgressStream progress(log,Verbose);
-#ifdef FEATURE_GENERATION
-        std::auto_ptr<Forest<DepthFeature, StubStats> > forest;
-#else
-        std::auto_ptr<Forest<DepthFeature, VotesStats> > forest;
-#endif
 
+        std::auto_ptr<Forest<DepthFeature, VotesStats> > forest;
 
         if (argc<2){
             std::cout << "exec <db file> <feature file>" << std::endl;
@@ -79,16 +61,14 @@ int main(int argc, char **argv)
         log << "number of points: " << db.Count() << std::endl;
         log << "number of vote classes: " << (int)db.voteClassCount() << std::endl;
 
-#ifndef FEATURE_GENERATION
         std::auto_ptr<DepthDBWithVotesSubindex> test;
         std::auto_ptr<DepthDBWithVotesSubindex> train;
-        RFUtils::splitRandom<DepthDBWithVotesSubindex>(random,db,train,test,0.5);
+        RFUtils::splitRandom<DepthDBWithVotesSubindex>(random,db,train,test,0.8);
 
         log << "train set size: " << train->Count() << std::endl;
         log << "test set size: " << test->Count() << std::endl;
-#endif
 
-        if (argc<3){
+        if (argc<4){
 
             DepthFeatureParameters featureParams;
             featureParams.uvlimit_ = 30;
@@ -98,7 +78,7 @@ int main(int argc, char **argv)
 
             Parameter<int> T(1, "No. of trees in the forest.");
             Parameter<int> D(10, "Maximum tree levels.");
-            Parameter<int> F(500, "No. of candidate feature response functions per split node.");
+            Parameter<int> F(1000, "No. of candidate feature response functions per split node.");
             Parameter<int> L(10, "No. of candidate thresholds per feature response function.");
             Parameter<bool> verbose(true,"Enables verbose progress indication.");
 
@@ -111,36 +91,36 @@ int main(int argc, char **argv)
             trainingParameters.NumberOfTrees = T.value();
             trainingParameters.Verbose = verbose.value();
 
-
-
-#ifdef FEATURE_GENERATION
-            DepthFeatureFactory factory(featureParams);
-            std::ostream &features = cache.openBinStream("features");
-            StubTrainingContext context(factory, trainingParameters, features);
-#else
 #ifndef TRAIN_TEST_RANDOM
-            PooledHoughTrainingContext context(db.voteClassCount(),pool);
+            std::ifstream in;
+            if (argc>2){
+                log << "reading features from " <<  argv[2] << std::endl;
+                in.open(argv[2]);
+            }else{
+                log << "reading features from (default location) " <<  "/home/kuznetso/tmp/Generator/24_19_26_57/features" << std::endl;
+                in.open("/home/kuznetso/tmp/Generator/24_19_26_57/features");
+            }
+
+            FeaturePool pool(in);
+            HoughTrainingContext<FeaturePool> context(db.voteClassCount(),pool);
             std::ostream &featureOutput = cache.openBinStream("accomulatedFeatures");
             FeatureAccomulator accomulator(featureOutput,trainingParameters.NumberOfCandidateFeatures*trainingParameters.NumberOfCandidateThresholdsPerFeature);
             context.setFeatureAccomulator(&accomulator);
 #else
-            DepthFeatureFactory factory(featureParams);
+            FullDepthFeatureFactory factory(featureParams);
+            HoughTrainingContext<FullDepthFeatureFactory> context(db.voteClassCount(),factory);
             std::ostream &featureOutput = cache.openBinStream("accomulatedFeatures");
             FeatureAccomulator accomulator(featureOutput,trainingParameters.NumberOfCandidateFeatures*trainingParameters.NumberOfCandidateThresholdsPerFeature);
-            HoughTrainingContext context(db.voteClassCount(),factory);
             context.setFeatureAccomulator(&accomulator);
 #endif
-#endif
+
 
             time(&start);
-#ifdef FEATURE_GENERATION
-            forest = ForestTrainer<DepthFeature, StubStats>::TrainForest (
-                random, trainingParameters, context, db ,&progress);
-#else
+
             forest = ForestTrainer<DepthFeature, VotesStats>::TrainForest (
                 random, trainingParameters, context, *train ,&progress);
 
-#endif
+
             time(&end);
             double dif = difftime (end,start);
 
@@ -152,10 +132,10 @@ int main(int argc, char **argv)
 
             log << "forest serialized" << std::endl;
         }
-#ifndef FEATURE_GENERATION
+
         else{
 
-            std::ifstream in(argv[2],std::ios_base::binary);
+            std::ifstream in(argv[3],std::ios_base::binary);
 
             forest = Forest<DepthFeature, VotesStats>::Deserialize(in);
 
@@ -169,35 +149,24 @@ int main(int argc, char **argv)
 
         cv::Point2i current;
         std::string tmpstr;
-//        int badNode = 1022;
         std::vector< std::vector <HoughVotesStats> > fullStats;
-//        std::vector<NodeDistributionImagestats> nodeDist;
 
         for (int v = 0; v < test->voteClassCount(); v++){
             fullStats.push_back(std::vector<HoughVotesStats>());
 
             for(int i=0; i< test->imageCount(); i++){
-                fullStats.back().push_back(HoughVotesStats(cv::Size(640,480),v));
+                fullStats.back().push_back(HoughVotesStats(cv::Size(480,640),v));
             }
         }
-/*
-        for(int i=0; i< test->imageCount(); i++){
-            nodeDist.push_back(NodeDistributionImagestats(cv::Size(480,640),badNode));
-        }
-*/
+
         log << "full stats vector created" << std::endl;
         log << "image count: " << test->imageCount() << std::endl;
 
-
-
-
         for(int i=0; i<test->Count(); i++){
             test->getDataPoint(i,tmpstr,current);
-            std::cerr << "point: " << current << std::endl;
             for(int t=0; t<forest->TreeCount(); t++)
             {
                 if (leafIndicesPerTree[t][i]>0)
-//                    nodeDist[test->getImageIdx(i)].addPoint(current,leafIndicesPerTree[t][i]);
                     for(int v = 0; v < test->voteClassCount(); v++){
 
                         if (fullStats[v][test->getImageIdx(i)].Aggregate(current,forest->GetTree(t).GetNode(leafIndicesPerTree[t][i]).TrainingDataStatistics)){
@@ -211,14 +180,6 @@ int main(int argc, char **argv)
         log << "statistic aggregated" << std::endl;
 
         std::string filename;
-/*        for(int i=0; i<nodeDist.size();i++){
-
-            filename = cache.base() + "pixDist" + num2str<int>(i) + ".png";
-            std::cerr << "serializing: " << filename << std::endl;
-            nodeDist[i].Serialize(filename);
-        }
-
-        log << "pixDist serialized" << std::endl; */
 
         std::vector<bool> seen(test->imageCount(),false);
         std::vector<cv::Point2i> votes(test->voteClassCount());
@@ -248,7 +209,7 @@ int main(int argc, char **argv)
         }
 
         log << "results serialized" << std::endl;
-#endif
+
     }catch(std::exception e){
         std::cerr << "exception caught: " << e.what() << std::endl;
         std::cerr.flush();

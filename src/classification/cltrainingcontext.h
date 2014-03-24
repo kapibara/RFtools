@@ -10,7 +10,7 @@
 class ClTrainingContext : public MicrosoftResearch::Cambridge::Sherwood::ITrainingContext<DepthFeature,ClassStats>
 {
 public:
-    ClTrainingContext(unsigned short nClasses,DepthFeatureFactory &factory):factory_(factory)
+    ClTrainingContext(unsigned short nClasses,FullDepthFeatureFactory &factory):factory_(factory)
     {
         nClasses_ = nClasses;
     }
@@ -65,7 +65,7 @@ public:
 private:
 
     unsigned short nClasses_;
-    DepthFeatureFactory &factory_;
+    FullDepthFeatureFactory &factory_;
 
 };
 

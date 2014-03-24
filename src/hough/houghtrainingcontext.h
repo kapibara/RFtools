@@ -10,16 +10,20 @@
 #include <ostream>
 
 
+template <class FeatureFactory>
 class HoughTrainingContext: public MicrosoftResearch::Cambridge::Sherwood::ITrainingContext<DepthFeature,VotesStats>
 {
 public:
-    HoughTrainingContext(unsigned char nClasses,DepthFeatureFactory &factory):factory_(factory)
+    HoughTrainingContext(unsigned char nClasses,FeatureFactory &factory):factory_(factory)
     {
         nClasses_ = nClasses;
         accomulator_ = 0;
     }
 
-    DepthFeature GetRandomFeature(MicrosoftResearch::Cambridge::Sherwood::Random& random);
+    DepthFeature GetRandomFeature(MicrosoftResearch::Cambridge::Sherwood::Random& random)
+    {
+        return factory_.getDepthFeature(random);
+    }
 
     void setFeatureAccomulator(FeatureAccomulator *ptr){
         accomulator_ = ptr;
@@ -66,6 +70,7 @@ public:
         if(accomulator_!=0){
             accomulator_->setCurrentNode(nodeIndex);
         }
+        factory_.setCurrentNode(nodeIndex);
     }
 
     void collectStats(const DepthFeature &feature, float threashold, double gain)
@@ -78,7 +83,7 @@ public:
 
 
 private:
-    DepthFeatureFactory &factory_;
+    FeatureFactory &factory_;
 
     int currentNode_;
     FeatureAccomulator *accomulator_;

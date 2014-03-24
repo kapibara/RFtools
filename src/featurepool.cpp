@@ -2,21 +2,8 @@
 
 #include "math.h"
 
-DepthFeature FeaturePool::getFeature(unsigned int nodeIndex)
+DepthFeature FeaturePool::getDepthFeature(MicrosoftResearch::Cambridge::Sherwood::Random &random)
 {
-    std::cerr << "FeaturePool::getFeature" << std::endl;
-
-    if(nodeIndex != currentNode_){
-        currentNode_ = nodeIndex;
-        if (currentFeature_ != fpnode_){
-            std::cerr << "not all features from the node " << nodeIndex << " are checked" << std::endl;
-            std::cerr << "last feature: " << currentFeature_
-                      << "feature count: " << fpnode_
-                      << std::endl;
-        }
-        currentFeature_ = 0;
-    }
-
     int feature = currentFeature_;
     currentFeature_++;
 
@@ -24,8 +11,6 @@ DepthFeature FeaturePool::getFeature(unsigned int nodeIndex)
     std::cerr << "max  index: " << features_.size() << std::endl;
 
     DepthFeature d = features_[currentNode_][feature];
-
-    std::cerr << "FeaturePool::getFeature ended" << std::endl;
 
     return d;
 }

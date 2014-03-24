@@ -40,7 +40,7 @@ void TestClassificationForest::test(DepthDBClassImage &db)
         log << "Train samples: " << train->Count() << std::endl;
         log << "Test samples: " << test->Count() << std::endl;
 
-        DepthFeatureFactory factory(params_[i].paramFeatures_);
+        FullDepthFeatureFactory factory(params_[i].paramFeatures_);
         ClTrainingContext context(db.classCount(),factory);
 
         log << "start forest training ... " << std::endl;

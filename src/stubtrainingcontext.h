@@ -8,10 +8,11 @@
 
 namespace MRS = MicrosoftResearch::Cambridge::Sherwood;
 
+template <class FeatureFactory>
 class StubTrainingContext: public  MRS::ITrainingContext<DepthFeature,StubStats>
 {
 public:
-    StubTrainingContext(DepthFeatureFactory &factory, const MRS::TrainingParameters &params, std::ostream &output): out_(output), factory_(factory)
+    StubTrainingContext(FeatureFactory &factory, const MRS::TrainingParameters &params, std::ostream &output): out_(output), factory_(factory)
     {
 
             output.write((const char *)&(params.NumberOfCandidateFeatures), sizeof(params.NumberOfCandidateFeatures));
@@ -19,7 +20,15 @@ public:
 
     }
 
-    DepthFeature GetRandomFeature(MicrosoftResearch::Cambridge::Sherwood::Random& random);
+    DepthFeature GetRandomFeature(MicrosoftResearch::Cambridge::Sherwood::Random& random)
+    {
+        DepthFeature f = factory_.getDepthFeature(random);
+
+
+        f.Serialize(out_);
+
+        return f;
+    }
 
     StubStats GetStatisticsAggregator()
     {
@@ -40,6 +49,7 @@ public:
     void setCurrentNode(int nodeIndex)
     {
         currentNode_ = nodeIndex;
+        factory_.setCurrentNode(nodeIndex);
         out_.write((const char *)(&currentNode_),sizeof(currentNode_));
     }
 
@@ -48,7 +58,7 @@ public:
 
 
 private:
-    DepthFeatureFactory &factory_;
+    FeatureFactory &factory_;
     int currentNode_;
     std::ostream &out_;
 };

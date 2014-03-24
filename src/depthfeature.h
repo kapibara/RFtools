@@ -29,11 +29,24 @@ struct DepthFeatureParameters{
     unsigned short zeroplane_;
 };
 
-class DepthFeatureFactory{
+/** this is an interface a depth feature factory should implement
+ * in any case; however, it is implemented as a template
+ * for performance reasons */
+class IDepthFeatureFactory{
+    virtual DepthFeature getDepthFeature(MicrosoftResearch::Cambridge::Sherwood::Random &random) = 0;
+    virtual void setCurrentNode(int nodeIndex) = 0;
+};
+
+
+//implements IDepthFeatureFactory
+class FullDepthFeatureFactory{
 public:
-    DepthFeatureFactory(const DepthFeatureParameters &param = DepthFeatureParameters());
+    FullDepthFeatureFactory(const DepthFeatureParameters &param = DepthFeatureParameters()):param_(param)
+    {/*nothing to implement*/}
 
     DepthFeature getDepthFeature(MicrosoftResearch::Cambridge::Sherwood::Random &random);
+    void setCurrentNode(int nodeIndex)
+    {/*nothing to implement*/}
 
     void setParameters(const DepthFeatureParameters &params) {param_ = params;}
 
@@ -43,18 +56,37 @@ private:
     DepthFeatureParameters param_;
 };
 
-/*standard depth feature*/
+//implements IDepthFeatureFactory
+class PartialDepthFeatureFactory{
+public:
+    PartialDepthFeatureFactory(const DepthFeatureParameters &param = DepthFeatureParameters()):param_(param)
+    {/*nothing to implement*/}
 
+    DepthFeature getDepthFeature(MicrosoftResearch::Cambridge::Sherwood::Random &random);
+    void setCurrentNode(int nodeIndex)
+    {/*nothing to implement*/}
+
+
+    void setParameters(const DepthFeatureParameters &params) {param_ = params;}
+
+    DepthFeatureParameters getParameters();
+
+private:
+    DepthFeatureParameters param_;
+};
+
+
+
+
+/*============Depth Features==============*/
 class DepthFeature
 {
-   friend class DepthFeatureFactory;
-
-protected:
-   DepthFeature(cv::Point2i u, cv::Point2i v, unsigned short zeroplane):u_(u),v_(v),zeroplane_(zeroplane)
-   {
-   }
 
 public:
+
+    DepthFeature(cv::Point2i u, cv::Point2i v, unsigned short zeroplane):u_(u),v_(v),zeroplane_(zeroplane)
+    {
+    }
 
     DepthFeature(){
         u_ = cv::Point2i(0,0);

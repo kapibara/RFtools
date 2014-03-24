@@ -8,6 +8,8 @@
 #include <istream>
 #include <vector>
 
+
+//implements IDepthFeatureFactory (see depthfeature.h)
 class FeaturePool
 {
 public:
@@ -24,7 +26,21 @@ public:
         return fpnode_;
     }
 
-    DepthFeature getFeature(unsigned int nodeIndex);
+    DepthFeature getDepthFeature(MicrosoftResearch::Cambridge::Sherwood::Random &random);
+
+    void setCurrentNode(int nodeIndex)
+    {
+        if(nodeIndex != currentNode_){
+            currentNode_ = nodeIndex;
+            if (currentFeature_ != fpnode_){
+                std::cerr << "not all features from the node " << nodeIndex << " are checked" << std::endl;
+                std::cerr << "last feature: " << currentFeature_
+                          << "feature count: " << fpnode_
+                          << std::endl;
+            }
+            currentFeature_ = 0;
+        }
+    }
 
 private:
 
