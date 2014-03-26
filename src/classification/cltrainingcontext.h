@@ -56,11 +56,14 @@ public:
         return result;
     }
 
-    virtual void setCurrentNode(int nodeIndex){
+    void setCurrentNode(int nodeIndex){
 
     }
 
-    virtual void collectStats(const DepthFeature &feature, float threashold, double gain){}
+    void collectStats(const DepthFeature &feature, float threashold, double gain)
+    {
+
+    }
 
 private:
 

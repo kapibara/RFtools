@@ -25,12 +25,14 @@
 #include "split.h"
 
 #include "classification/testclassificationforest.h"
+#include "configuration.h"
 
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 
 int main(int argc, char **argv)
 {
+
 
     TestClassificationForest tester;
     DepthDBClassImage db;

@@ -1,0 +1,23 @@
+<?xml version ="1.0"?>
+<forest>
+  <type>hough</type>
+  <folder>DepthHough</folder>
+  <properties>
+    <dbfile>/home/kuznetso/tmp/HoughTests/Hand_Data/files.txt</dbfile>
+    <subsampler>RandomSubsampler</subsampler>
+    <testonly>0</testonly>
+    <testtrainsplit>0.1</testtrainsplit>
+    <serializeinfo>0</serializeinfo>
+    <forestproperties>
+      <treecount>1</treecount>
+      <depth>10</depth>
+      <featurespernode>200</featurespernode>
+      <thrperfeature>10</thrperfeature>
+    </forestproperties>
+    <featureproperties>
+      <factory>FullDepthFeatureFactory</factory>
+      <uvlimit>30</uvlimit>
+      <zeroplane>300</zeroplane>
+    </featureproperties> 
+  </properties>
+</forest>

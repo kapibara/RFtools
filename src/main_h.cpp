@@ -20,6 +20,7 @@
 #include "rfutils.h"
 #include "featurepool.h"
 #include "nodedistributionimagestats.h"
+#include "configuration.h"
 
 #include <time.h>
 
@@ -27,13 +28,63 @@
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 
+ITrainingContext<DepthFeature,VotesStats>  *createTrainingContext(Configuration &config, LocalCache &cache, uchar classCount)
+{
+    ITrainingContext<DepthFeature,VotesStats> *context = 0;
+    FeatureAccomulator *accomulator = 0;
+    TrainingParameters tp = config.forestParameters();
+
+    if(config.serializeInfo()){
+        std::ostream &featureOutput = cache.openBinStream("accomulatedFeatures");
+        accomulator = new FeatureAccomulator(featureOutput,tp.NumberOfCandidateFeatures*tp.NumberOfCandidateThresholdsPerFeature);
+    }
+
+    switch(config.factoryType()){
+    case Configuration::FeaturePool:
+    {
+        std::ifstream in(config.featuresFile().c_str());
+        FeaturePool *fp = new FeaturePool(in);
+        context =  new HoughTrainingContext<FeaturePool>(classCount,*fp);
+        break;
+    }
+    case Configuration::FullFeaturesFactory:
+    {
+        FullDepthFeatureFactory *fff = new FullDepthFeatureFactory(config.featureParameters());
+        context = new HoughTrainingContext<FullDepthFeatureFactory>(classCount,*fff);
+        if (config.serializeInfo()){
+            ((HoughTrainingContext<FullDepthFeatureFactory> *)context)->setFeatureAccomulator(accomulator);
+        }
+        break;
+    }
+    case Configuration::PartialFeaturesFactory:
+    {
+        PartialDepthFeatureFactory *pff = new PartialDepthFeatureFactory(config.featureParameters());
+        context = new HoughTrainingContext<PartialDepthFeatureFactory>(classCount,*pff);
+        if (config.serializeInfo()){
+            ((HoughTrainingContext<PartialDepthFeatureFactory> *)context)->setFeatureAccomulator(accomulator);
+        }
+        break;
+    }
+    default:
+        cache.log() << "Unknown feature factory type; nothing to return" << std::endl;
+    }
+
+    return context;
+}
+
 int main(int argc, char **argv)
 {
-    std::cout << "starting the program" << std::endl;
+    std::cout << "config: " << argv[1] << std::endl;
+    std::cout << "reading config data" << std::endl;
 
-    LocalCache cache("DepthHOUGH","/home/kuznetso/tmp");
+    std::ifstream in("/home/kuznetso/Projects/CPP/DepthRF/propertiesTemplate.xml");
+    Configuration config(in);
+    in.close();
 
-    std::cout << "arg1: " << argv[1] << std::endl;
+    std::cout << "configuration loaded" << std::endl;
+
+
+    LocalCache cache(config.cacheFolderName(),"/home/kuznetso/tmp");
 
     if(!cache.init()){
         std::cerr << "failed to initialize temporary directory" << std::endl;
@@ -41,6 +92,8 @@ int main(int argc, char **argv)
     }
 
     std::ostream &log = cache.log();
+
+    log << "config name: " << argv[1] << std::endl;
 
     try{
         DepthDBWithVotesImpl db;
@@ -50,76 +103,40 @@ int main(int argc, char **argv)
 
         std::auto_ptr<Forest<DepthFeature, VotesStats> > forest;
 
-        if (argc<2){
-            std::cout << "exec <db file> <feature file>" << std::endl;
-        }
+        db.loadDB(config.databaseFile());
 
-        db.loadDB(argv[1]);
-
-        log << "loading from: " << argv[1] << std::endl;
+        log << "loading from: " << config.databaseFile() << std::endl;
         log << "number of images: " << db.imageCount() << std::endl;
         log << "number of points: " << db.Count() << std::endl;
         log << "number of vote classes: " << (int)db.voteClassCount() << std::endl;
 
         std::auto_ptr<DepthDBWithVotesSubindex> test;
         std::auto_ptr<DepthDBWithVotesSubindex> train;
-        RFUtils::splitRandom<DepthDBWithVotesSubindex>(random,db,train,test,0.8);
+        RFUtils::splitRandom<DepthDBWithVotesSubindex>(random,db,train,test,config.testTrainSplit());
 
         log << "train set size: " << train->Count() << std::endl;
         log << "test set size: " << test->Count() << std::endl;
 
-        if (argc<4){
-
-            DepthFeatureParameters featureParams;
-            featureParams.uvlimit_ = 30;
-            featureParams.zeroplane_ = 300;
+        if(!config.testOnly()){
+            //some work here
+            DepthFeatureParameters featureParams = config.featureParameters();
 
             log << featureParams;
 
-            Parameter<int> T(1, "No. of trees in the forest.");
-            Parameter<int> D(10, "Maximum tree levels.");
-            Parameter<int> F(1000, "No. of candidate feature response functions per split node.");
-            Parameter<int> L(10, "No. of candidate thresholds per feature response function.");
-            Parameter<bool> verbose(true,"Enables verbose progress indication.");
+            TrainingParameters trainingParameters = config.forestParameters();
 
-            log << T << D << F << L << std::endl;
+            log << "decision levels: " << trainingParameters.MaxDecisionLevels << std::endl
+                << "trees: " << trainingParameters.NumberOfTrees << std::endl
+                << "features sampled: " << trainingParameters.NumberOfCandidateFeatures << std::endl
+                << "threashold per feature: " << trainingParameters.NumberOfCandidateThresholdsPerFeature <<std::endl
+                << std::endl;
 
-            TrainingParameters trainingParameters;
-            trainingParameters.MaxDecisionLevels = D.value()-1;
-            trainingParameters.NumberOfCandidateFeatures = F.value();
-            trainingParameters.NumberOfCandidateThresholdsPerFeature = L.value();
-            trainingParameters.NumberOfTrees = T.value();
-            trainingParameters.Verbose = verbose.value();
-
-#ifndef TRAIN_TEST_RANDOM
-            std::ifstream in;
-            if (argc>2){
-                log << "reading features from " <<  argv[2] << std::endl;
-                in.open(argv[2]);
-            }else{
-                log << "reading features from (default location) " <<  "/home/kuznetso/tmp/Generator/24_19_26_57/features" << std::endl;
-                in.open("/home/kuznetso/tmp/Generator/24_19_26_57/features");
-            }
-
-            FeaturePool pool(in);
-            HoughTrainingContext<FeaturePool> context(db.voteClassCount(),pool);
-            std::ostream &featureOutput = cache.openBinStream("accomulatedFeatures");
-            FeatureAccomulator accomulator(featureOutput,trainingParameters.NumberOfCandidateFeatures*trainingParameters.NumberOfCandidateThresholdsPerFeature);
-            context.setFeatureAccomulator(&accomulator);
-#else
-            FullDepthFeatureFactory factory(featureParams);
-            HoughTrainingContext<FullDepthFeatureFactory> context(db.voteClassCount(),factory);
-            std::ostream &featureOutput = cache.openBinStream("accomulatedFeatures");
-            FeatureAccomulator accomulator(featureOutput,trainingParameters.NumberOfCandidateFeatures*trainingParameters.NumberOfCandidateThresholdsPerFeature);
-            context.setFeatureAccomulator(&accomulator);
-#endif
-
+            ITrainingContext<DepthFeature,VotesStats> *context = createTrainingContext(config,cache,db.voteClassCount());
 
             time(&start);
 
             forest = ForestTrainer<DepthFeature, VotesStats>::TrainForest (
-                random, trainingParameters, context, *train ,&progress);
-
+                random, trainingParameters, *context, *train ,&progress);
 
             time(&end);
             double dif = difftime (end,start);
@@ -135,7 +152,7 @@ int main(int argc, char **argv)
 
         else{
 
-            std::ifstream in(argv[3],std::ios_base::binary);
+            std::ifstream in(config.forestFile().c_str(),std::ios_base::binary);
 
             forest = Forest<DepthFeature, VotesStats>::Deserialize(in);
 
@@ -155,7 +172,7 @@ int main(int argc, char **argv)
             fullStats.push_back(std::vector<HoughVotesStats>());
 
             for(int i=0; i< test->imageCount(); i++){
-                fullStats.back().push_back(HoughVotesStats(cv::Size(480,640),v));
+                fullStats.back().push_back(HoughVotesStats(cv::Size(240,320),v));
             }
         }
 

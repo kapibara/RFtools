@@ -36,6 +36,7 @@ set(GENERAL_HEADERS /
             featureaccomulator.h /
             nodedistributionimagestats.h /
             colorgenerator.h /
+            configuration.h /
 )
 
 set(CL_SOURCE ${CL_FOLDER}/depthdb.cpp /
@@ -68,6 +69,7 @@ set(GENERAL_SOURCE  /
                     featureaccomulator.cpp /
                     nodedistributionimagestats.cpp /
                     colorgenerator.cpp /
+                    configuration.cpp /
 )
 
 #required to see the code in QT creator only...

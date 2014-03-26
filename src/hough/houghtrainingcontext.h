@@ -50,17 +50,6 @@ public:
 
     bool ShouldTerminate(const VotesStats& parent, const VotesStats& leftChild, const VotesStats& rightChild, double gain)
     {
-     /*    std::cerr << "vote variance: " << parent.VoteVariance() << std::endl;
-        std::cerr << "lvv: " << leftChild.VoteVariance() << std::endl;
-        std::cerr << "rvv: " << rightChild.VoteVariance() << std::endl;
-        std::cerr << "lsize: " << leftChild.Size() << std::endl;
-        std::cerr << "rsize: " << rightChild.Size() << std::endl;
-        std::cerr << "gain: " << gain << std::endl;
-        if (out_!=0){
-            out_->write((const char *)&currentNode_, sizeof(currentNode_));
-            out_->write((const char *)&gain, sizeof(gain));
-        }*/
-
         return gain < 0.01 | (leftChild.Count() < 100) | (rightChild.Count() < 100);
     }
 
@@ -78,7 +67,6 @@ public:
         if(accomulator_!=0){
             accomulator_->addCurrentParameters(feature,threashold,gain);
         }
-
     }
 
 
@@ -87,8 +75,6 @@ private:
 
     int currentNode_;
     FeatureAccomulator *accomulator_;
-
-//    std::ostream *out_;
 
     unsigned char nClasses_;
 };
