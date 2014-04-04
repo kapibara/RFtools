@@ -6,7 +6,7 @@ set(HOME ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(CMAKE_BUILD_TYPE Release)
 
-set(CMAKE_INSTALL_PREFIX ${HOME}/bin_new)
+set(CMAKE_INSTALL_PREFIX ${HOME}/bin)
 
 if(WIN32)
     set(DEV_BASE "C:/Data/Development/CPP/")

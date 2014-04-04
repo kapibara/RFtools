@@ -109,6 +109,9 @@ int main(int argc, char **argv)
             db.setSubsampler(new RandomSubsampler(config.subsamplerRate(),random));
         }
         db.loadDB(config.databaseFile());
+        db.setRelative(1,false);
+        db.setRelative(2,false);
+        db.setRelative(3,false);
 
         log << "loading from: " << config.databaseFile() << std::endl;
         log << "number of images: " << db.imageCount() << std::endl;
@@ -212,8 +215,7 @@ int main(int argc, char **argv)
                 trStats = &(forest->GetTree(t).GetNode(leafIndicesPerTree[t][i]).TrainingDataStatistics);
                 trStats->FinalizeDistribution(cv::Size(640,480));
 
-
-                if (leafIndicesPerTree[t][i]>0){
+                if (leafIndicesPerTree[t][i]>=0){
                     if(!config.discardHighVar() || trStats->normalizedVoteVariance() < config.nodeVarThr()){
                         for(int v = 0; v < test->voteClassCount(); v++){
                             fullStats[v][test->getImageIdx(i)].Aggregate(current,*trStats);

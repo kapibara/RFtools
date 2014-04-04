@@ -9,7 +9,9 @@ DepthDBWithVotesImpl::DepthDBWithVotesImpl(const std::string &basepath):
 bool DepthDBWithVotesImpl::loadDB(const std::string &filename)
 {
     StringParserWithOffsert parser;
-    return DepthFileBasedImageDBImpl::loadDB(filename, parser);
+    bool result =  DepthFileBasedImageDBImpl::loadDB(filename, parser);
+    isRelative_.resize(this->voteClassCount(),true);
+    return result;
 }
 
 bool DepthDBWithVotesImpl::postprocessFile(const cv::Mat &mat, GeneralStringParser &parser)
@@ -43,7 +45,11 @@ bool DepthDBWithVotesImpl::getDataPointVote(index_type i, std::vector<cv::Point2
     cv::Point2i x = index2point(pair.second,imgSize_);//we know that imgSize is constant
 
     for(int i=0; i<votes_[pair.first].size();i++){
-        vote[i] = votes_[pair.first][i]-x;
+        if (isRelative_[i])
+            vote[i] = votes_[pair.first][i]-x;
+        else
+            vote[i] = votes_[pair.first][i];
+
     }
 
     return true;

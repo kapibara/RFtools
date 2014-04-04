@@ -49,6 +49,11 @@ public:
 
     bool getDataPointVote(index_type i, std::vector<cv::Point2i> &vote);
 
+    void setRelative(vote_class_count cl, bool value)
+    {
+        isRelative_[cl] = value;
+    }
+
     vote_class_count voteClassCount(){
         return voteClassCount_;
     }
@@ -59,6 +64,7 @@ protected:
 private:
 
     vote_class_count voteClassCount_;
+    std::vector<bool> isRelative_;
     std::vector<std::vector<cv::Point2i> > votes_; //stores joint locations for each image
 };
 
