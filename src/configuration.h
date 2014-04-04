@@ -18,7 +18,12 @@ public:
 
     bool testOnly(){return testOnly_;}
     bool serializeInfo() {return serializeInfo_;}
+    bool useSubsampler() {return subsamplerRate_>0;}
+    bool discardHighVar() {return varianceThr_>0;}
     float testTrainSplit() {return testTrainSplit_;}
+    float subsamplerRate() {return subsamplerRate_;}
+    float nodeVarThr() {return varianceThr_;}
+
     std::string cacheFolderName() {return cacheFolderName_;}
     std::string databaseFile() {return dbFile_;}
     std::string forestFile() {return forestLocation_;}
@@ -35,12 +40,15 @@ private:
     bool testOnly_;
     bool serializeInfo_;
 
+
     Factory factory_;
     std::string forestType_;
     std::string forestLocation_;
     std::string dbFile_;
     std::string featuresLocation_;
     std::string cacheFolderName_;
+    float subsamplerRate_;
+    float varianceThr_;
 
     int candidatesCount_;
     float testTrainSplit_;

@@ -43,7 +43,7 @@ public:
         if(parent.Count() <=1){
             return 0;
         }
-        /*computing parent.VoteVariance() is not optimal*/
+
 
         return ((parent.VoteVariance() - lvv) - rvv);
     }

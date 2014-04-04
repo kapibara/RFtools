@@ -1,30 +1,33 @@
 #include "votesstats.h"
 
+//#define OLD_DESERIALIZATION
+
 void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection& data, unsigned int index)
 {
     DepthDBWithVotes &db = dynamic_cast<DepthDBWithVotes &>(data);
     variance_ = -1; //invalidate variance
-    int x2,y2;
-    bool acceptedOnce = false;
 
     db.getDataPointVote(index,container_);
 
-    /*we suppose: voteClasses_ <= vote.size()*/
+    Aggregate();
+}
+
+void VotesStats::SetContainer(std::vector<cv::Point2i> &input)
+{
+    for(int i=0; i<container_.size(); i++){
+        container_[i] = input[i];
+    }
+
+}
+
+void VotesStats::Aggregate()
+{
+    bool acceptedOnce = false;
+    int x2,y2;
 
     try{
         for(int i=0; i<voteClasses_; i++){
-/*            if(container_[i].x < minx_[i]){
-                minx_[i] = container_[i].x;
-            }
-            if(container_[i].y < miny_[i]){
-                miny_[i] = container_[i].y;
-            }
-            if(container_[i].x > maxx_[i]){
-                maxx_[i] = container_[i].x;
-            }
-            if(container_[i].y > maxy_[i]){
-                maxy_[i] = container_[i].y;
-            }*/
+
             x2 = (container_[i].x)*(container_[i].x);
             y2 = (container_[i].y)*(container_[i].y);
             if (x2+y2 < dthreashold2_){
@@ -62,8 +65,6 @@ void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCol
 
     if (acceptedOnce)
         pointCount_++;
-
-
 }
 
 void VotesStats::Aggregate(const VotesStats& stats)
@@ -85,18 +86,6 @@ void VotesStats::Aggregate(const VotesStats& stats)
         std::cerr.flush();
     }
 #endif
-/*        if(stats.minx_[i] < minx_[i]){
-            minx_[i] = stats.minx_[i];
-        }
-        if(stats.miny_[i] < miny_[i]){
-            miny_[i] = stats.miny_[i];
-        }
-        if(stats.maxx_[i] > maxx_[i]){
-            maxx_[i] = stats.maxx_[i];
-        }
-        if(stats.maxy_[i] > maxy_[i]){
-            maxy_[i] = stats.maxy_[i];
-        }*/
         mx_[i] += stats.mx_[i];
         my_[i] += stats.my_[i];
         mx2_[i] += stats.mx2_[i];
@@ -113,32 +102,6 @@ void VotesStats::Aggregate(const VotesStats& stats)
     pointCount_+=stats.pointCount_;
 }
 
-void VotesStats::toMatrices()
-{
-    std::vector<int> minx(voteClasses_,0),miny(voteClasses_,0), maxx(voteClasses_,0), maxy(voteClasses_,0);
-    cv::Mat tmp;
-
-    for(int i=0; i<voteClasses_; i++){
-
-        for(const_iterator j = begin(i); j!=end(i); j++ ){
-            if ((*j).x<minx[i]){
-                minx[i] = (*j).x;
-            }
-            if((*j).y<miny[i]){
-                miny[i] = (*j).y;
-            }
-            if((*j).x>maxx[i]){
-                maxx[i] = (*j).x;
-            }
-            if((*j).y>maxy[i]){
-                maxy[i] = (*j).y;
-            }
-        }
-
-        tmp = cv::Mat(maxx[i]-minx[i]+1,maxy[i]-miny[i]+1,CV_8UC4);
-    }
-}
-
 void VotesStats::Compress()
 {
     /*radical solution*/
@@ -150,8 +113,6 @@ void VotesStats::Compress()
 
 bool VotesStats::SerializeChar(std::ostream &stream) const
 {
-    std::cerr << "SerializeChar is called..." << std::endl;
-
     std::ostringstream ss;
     ss << pointCount_ << std::endl;
     ss << (int)voteClasses_ << std::endl;
@@ -193,7 +154,31 @@ bool VotesStats::Serialize(std::ostream &stream) const
         }
     }
 
+    unsigned char matrixStatsSize = matrixStats_.size();
+    unsigned short rows,cols;
+
+    stream.write((const char *)&matrixStatsSize,sizeof(matrixStatsSize));
+    for(int i=0; i<matrixStatsSize;i++){
+        rows = matrixStats_[i].rows;
+        cols = matrixStats_[i].cols;
+        stream.write((const char *)&rows,sizeof(rows));
+        stream.write((const char *)&cols,sizeof(cols));
+        serializeMatrix(stream,matrixStats_[i]);
+        stream.write((const char *)&(centers_[i].x),sizeof(centers_[i].x));
+        stream.write((const char *)&(centers_[i].y),sizeof(centers_[i].y));
+    }
+
     return true;
+}
+
+void VotesStats::serializeMatrix(std::ostream &out,const cv::Mat &mat) const
+{
+    const unsigned char *ptr;
+    for(int i=0; i< mat.rows; i++){
+
+        ptr = mat.ptr(i);
+        out.write((const char *)ptr,mat.cols*mat.elemSize());
+    }
 }
 
 bool VotesStats::Deserialize(std::istream &stream)
@@ -204,21 +189,119 @@ bool VotesStats::Deserialize(std::istream &stream)
     unsigned int vsize;
     cv::Point2i p;
 
+    mx_.resize(voteClasses_,0);
+    my_.resize(voteClasses_,0);
+    mx2_.resize(voteClasses_,0);
+    my2_.resize(voteClasses_,0);
+    votesCount_.resize(voteClasses_,0);
+
     for(int i=0; i<voteClasses_;i++){
         votes_.push_back(voteVector());
         stream.read((char *)(&vsize),sizeof(vsize));
         for(int j=0; j<vsize; j++){
             stream.read((char *)(&(p.x)),sizeof(p.x));
             stream.read((char *)(&(p.y)),sizeof(p.y));
+            mx_[i] += p.x;
+            my_[i] += p.y;
+            mx2_[i] += p.x*p.x;
+            my2_[i] += p.y*p.y;
+            votesCount_[i]++;
 
             votes_.back().push_back(p);
         }
+    }
+
+    unsigned char matrixStatsSize;
+    unsigned short rows,cols;
+
+    stream.read((char *)&matrixStatsSize,sizeof(matrixStatsSize));
+
+    for(int i=0; i<matrixStatsSize ; i++){
+        stream.read((char *)&rows,sizeof(rows));
+        stream.read((char *)&cols,sizeof(cols));
+        matrixStats_.push_back(cv::Mat(rows,cols,CV_16UC1));
+        deserializeMatrix(stream,matrixStats_.back());
+        centers_.push_back(cv::Point2i());
+        stream.read((char *)&(centers_.back().x),sizeof(centers_.back().x));
+        stream.read((char *)&(centers_.back().y),sizeof(centers_.back().y));
     }
 
     aggregationValid_ = true;
     variance_ = -1;
 
     return true;
+}
+
+void VotesStats::deserializeMatrix(std::istream &out, cv::Mat &mat)
+{
+    unsigned char *ptr;
+    for(int i=0; i< mat.rows; i++){
+        ptr = mat.ptr(i);
+        out.read((char *)ptr,mat.cols*mat.elemSize());
+    }
+}
+
+//aggregate votes distribution in a matrix
+void VotesStats::FinalizeDistribution(cv::Size maxsize)
+{
+    cv::Point2i center(maxsize.width/2,maxsize.height/2);
+
+    if(matrixStats_.size()==0){
+
+        int min_x,min_y,max_x,max_y;
+        const_iterator itor;
+        unsigned short *ptr;
+
+
+
+        for(int i = 0; i < voteClasses_; i++){
+
+            cv::Mat m = cv::Mat(maxsize,CV_16UC1);
+            m.setTo(0);
+            ptr = m.ptr<unsigned short>(0);
+
+            if(!m.isContinuous()){
+                std::cerr << "non-continious matrix!" << std::endl;
+            }
+
+            itor = begin(i);
+
+            if (itor != end(i)){
+
+                min_x = (*itor).x;
+                min_y = (*itor).y;
+                max_x = (*itor).x;
+                max_y = (*itor).y;
+
+                ptr[point2index((*itor)+center,maxsize)]++;
+
+                itor++;
+
+                for(;itor!=end(i);itor++){
+                    if((*itor).x < min_x)
+                        min_x = (*itor).x;
+                    if((*itor).y < min_y)
+                        min_y = (*itor).y;
+                    if((*itor).x > max_x)
+                        max_x = (*itor).x;
+                    if((*itor).y > max_y)
+                        max_y = (*itor).y;
+                    ptr[point2index((*itor)+center,maxsize)]++;
+                }
+
+                min_x += center.x;
+                min_y += center.y;
+                max_x += center.x;
+                max_y += center.y;
+
+                matrixStats_.push_back(m(cv::Range(min_y,max_y+1),cv::Range(min_x,max_x+1)));
+                centers_.push_back(center - cv::Point2i(min_x,min_y));
+            }else{
+                matrixStats_.push_back(cv::Mat());
+                centers_.push_back(cv::Point2i(0,0));
+            }
+        }
+    }
 }
 
 double VotesStats::VoteVariance()
@@ -230,16 +313,12 @@ double VotesStats::VoteVariance()
 
         for(int i=0; i<voteClasses_; i++){
 
-            if(votesCount_[i] == 0){
 
-                mx = 0;
-                my = 0;
-
-            }else{
+            if(votesCount_[i] > 0){
 
                 mx = mx_[i]/votesCount_[i];
                 my = my_[i]/votesCount_[i];
-            }
+
 
 #ifdef ENABLE_OVERFLOW_CHECKS
     if (std::abs(mx_[i]) > (std::numeric_limits<double>::max()/std::abs(mx))){
@@ -260,7 +339,8 @@ double VotesStats::VoteVariance()
     }
 #endif
             /*optimized variance computation; otherwise n^2, performance killer*/
-            fulld2 += (mx2_[i] - mx*mx_[i]) + (my2_[i] - my*my_[i]);
+                fulld2 += (mx2_[i] - mx*mx_[i]) + (my2_[i] - my*my_[i]);
+            }
         }
 
         variance_ = fulld2;
@@ -273,4 +353,26 @@ double VotesStats::VoteVariance()
     return variance_;
 
 }
+
+double VotesStats::normalizedVoteVariance()
+{
+    double mx,my,fulld2;
+
+    fulld2 = 0;
+
+
+    for(int i=0; i<voteClasses_; i++){
+
+        if(votesCount_[i] > 1) {
+
+            mx = mx_[i]/votesCount_[i];
+            my = my_[i]/votesCount_[i];
+            fulld2 += (mx2_[i] - mx*mx_[i])/(votesCount_[i]-1) + (my2_[i] - my*my_[i])/(votesCount_[i]-1);
+
+        }
+    }
+
+    return fulld2;
+}
+
 

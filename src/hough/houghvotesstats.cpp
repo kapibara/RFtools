@@ -38,7 +38,39 @@ void HoughVotesStats::Aggregate(const HoughVotesStats &stats)
     }
 }
 
-bool HoughVotesStats::Aggregate(const cv::Point2i &abs, const VotesStats& stats)
+bool HoughVotesStats::Aggregate(const cv::Point2i &abs,const VotesStats& stats)
+{
+    if(!mat_.isContinuous()){
+        std::cerr << "matrix is not continous" << std::endl;
+    }
+
+    cv::Point2i center;
+    cv::Point2i tmp;
+    const cv::Mat &m = stats.Distribution(voteClass_,center);
+
+    center =  abs - center;
+
+    //now iterate through the matrix
+    for(int i=0; i<m.rows; i++){
+        for( int j=0; j<m.cols; j++){
+            tmp = cv::Point2i(j,i) + center;
+
+            if(tmp.x < 0 | tmp.y < 0 | tmp.y >= mat_.rows | tmp.x >= mat_.cols)
+            {
+                outOfBoundaries_+=m.at<unsigned short>(cv::Point2i(j,i));
+            }
+            else
+            {
+
+                mat_.at<unsigned int>(tmp) += m.at<unsigned short>(cv::Point2i(j,i));
+            }
+        }
+    }
+
+    return false;
+}
+
+bool HoughVotesStats::AggregateOld(const cv::Point2i &abs, const VotesStats& stats)
 {
     if(!mat_.isContinuous()){
         std::cerr << "matrix is not continous" << std::endl;
@@ -60,7 +92,7 @@ bool HoughVotesStats::Aggregate(const cv::Point2i &abs, const VotesStats& stats)
             if(tmp.x > 320 | tmp.y > 320){
                 tooBigValues = true;
             }
-            mat_.at<unsigned int>(tmp.x ,tmp.y ) +=1;
+            mat_.at<unsigned int>(tmp) +=1;
         }
     }
 
@@ -83,8 +115,9 @@ void HoughVotesStats::Aggregate(const cv::Point2i &abs, const cv::Point2i &vote)
 
 bool HoughVotesStats::Serialize(const std::string &filename)
 {
-    cv::Mat out(mat_.rows,mat_.cols,CV_8UC1);
+    cv::Mat out(mat_.rows,mat_.cols,CV_8UC3);
     int rows = mat_.rows, cols = mat_.cols;
+    out.setTo(cv::Vec3b(0,0,0));
 
     if(mat_.isContinuous() & out.isContinuous()){
         cols*=rows;
@@ -109,10 +142,14 @@ bool HoughVotesStats::Serialize(const std::string &filename)
             matptr = mat_.ptr<unsigned int>(i);
             outptr = out.ptr(i);
             for(int j=0; j<cols; j++){
-                outptr[j] = ((double)matptr[j])/maxval*255.0;
+                outptr[3*j] = ((double)matptr[j])/maxval*255.0;
+                outptr[3*j+1] = ((double)matptr[j])/maxval*255.0;
+                outptr[3*j+2] = ((double)matptr[j])/maxval*255.0;
             }
         }
     }
+
+    out.at<cv::Vec3b>(gt_) = cv::Vec3b(0,0,255);
 
     cv::imwrite(filename,out);
 

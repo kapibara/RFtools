@@ -14,7 +14,8 @@ public:
         mat_.setTo(0);
     }
 
-    bool Aggregate(const cv::Point2i &abs, const VotesStats& i);
+    bool Aggregate(const cv::Point2i &abs,const VotesStats& i);
+    bool AggregateOld(const cv::Point2i &abs, const VotesStats& stats);
 
     void Aggregate(const cv::Point2i &abs, const cv::Point2i &vote);
 

@@ -7,7 +7,7 @@
 #include <vector>
 #include <list>
 
-//#define ENABLE_OVERFLOW_CHECKS
+#define ENABLE_OVERFLOW_CHECKS
 
 class VotesStats
 {
@@ -22,10 +22,6 @@ public:
         my_(voteClasses,0),
         mx2_(voteClasses,0),
         my2_(voteClasses,0),
-/*        minx_(voteClasses,0),
-        miny_(voteClasses,0),
-        maxx_(voteClasses,0),
-        maxy_(voteClasses,0),*/
         votesCount_(voteClasses,0),
         container_(voteClasses),
         votes_(voteClasses,voteVector())
@@ -47,10 +43,7 @@ public:
        my_.assign(my_.size(),0);
        mx2_.assign(mx2_.size(),0);
        my2_.assign(my2_.size(),0);
-/*       minx_.assign(minx_.size(),0);
-       miny_.assign(miny_.size(),0);
-       maxx_.assign(maxx_.size(),0);
-       maxy_.assign(maxy_.size(),0);*/
+       matrixStats_.clear();
        votesCount_.assign(votesCount_.size(),0);
 
        for(int i=0 ; i < voteClasses_; i++){
@@ -70,6 +63,10 @@ public:
         return votes_[voteClass].end();
     }
 
+    void SetContainer(std::vector<cv::Point2i> &input);
+
+    void Aggregate();
+
     void Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection& data, unsigned int index);
 
     void Aggregate(const VotesStats& i);
@@ -84,16 +81,24 @@ public:
         fullStats_ = compute;
     }
 
-    void toMatrices();
-
     int Classes() const
     {
         return voteClasses_;
     }
 
+    void FinalizeDistribution(cv::Size maxsize);
+
+    const cv::Mat &Distribution(unsigned char voteClass, cv::Point2i &center) const {
+
+        center = centers_.at(voteClass);
+        return matrixStats_.at(voteClass);
+    }
+
     void Compress();
 
     double VoteVariance();
+
+    double normalizedVoteVariance();
 
     bool Serialize(std::ostream &stream) const;
     bool SerializeChar(std::ostream &stream) const;
@@ -106,6 +111,13 @@ public:
 
 private:
 
+    void serializeMatrix(std::ostream &out,const cv::Mat &mat) const;
+    void deserializeMatrix(std::istream &out,cv::Mat &mat);
+
+    int point2index(cv::Point2i p,cv::Size size)
+    {
+        return p.x +p.y*size.width;
+    }
 
     unsigned int norm2(int x, int y) const
     {
@@ -125,10 +137,7 @@ private:
     std::vector< double > my_;
     std::vector< double > my2_;
     std::vector< cv::Mat > matrixStats_;
-/*    std::vector< int> minx_;
-    std::vector< int> miny_;
-    std::vector< int > maxx_;
-    std::vector< int > maxy_;*/
+    std::vector< cv::Point2i > centers_;
     std::vector<cv::Point2i> container_;
 
     int dthreashold2_;
