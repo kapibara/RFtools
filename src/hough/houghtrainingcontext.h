@@ -14,10 +14,11 @@ template <class FeatureFactory>
 class HoughTrainingContext: public MicrosoftResearch::Cambridge::Sherwood::ITrainingContext<DepthFeature,VotesStats>
 {
 public:
-    HoughTrainingContext(unsigned char nClasses,FeatureFactory &factory):factory_(factory)
+    HoughTrainingContext(unsigned char nClasses,FeatureFactory &factory,unsigned int thr2 = 300*300):factory_(factory)
     {
         nClasses_ = nClasses;
         accomulator_ = 0;
+        thr2_ = thr2;
     }
 
     DepthFeature GetRandomFeature(MicrosoftResearch::Cambridge::Sherwood::Random& random)
@@ -28,10 +29,9 @@ public:
     void setFeatureAccomulator(FeatureAccomulator *ptr){
         accomulator_ = ptr;
     }
-
     VotesStats GetStatisticsAggregator()
     {
-        return VotesStats(nClasses_);
+        return VotesStats(nClasses_,thr2_);
     }
 
     double ComputeInformationGain(VotesStats& parent, VotesStats& leftChild, VotesStats& rightChild)
@@ -77,6 +77,7 @@ private:
     FeatureAccomulator *accomulator_;
 
     unsigned char nClasses_;
+    unsigned int thr2_;
 };
 
 #endif // HOUGHTRAININGCONTEXT_H

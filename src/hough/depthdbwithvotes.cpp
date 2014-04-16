@@ -6,13 +6,20 @@ DepthDBWithVotesImpl::DepthDBWithVotesImpl(const std::string &basepath):
     voteClassCount_ = 0;
 }
 
-bool DepthDBWithVotesImpl::loadDB(const std::string &filename)
+bool DepthDBWithVotesImpl::loadDB(const std::string &filename,  bool hasHeader)
 {
     StringParserWithOffsert parser;
-    bool result =  DepthFileBasedImageDBImpl::loadDB(filename, parser);
-    isRelative_.resize(this->voteClassCount(),true);
+
+
+    bool result =  DepthFileBasedImageDBImpl::loadDB(filename, parser,hasHeader);
+
+    if(!hasHeader){
+        isRelative_.resize(voteClassCount_,true);
+    }
+
     return result;
 }
+
 
 bool DepthDBWithVotesImpl::postprocessFile(const cv::Mat &mat, GeneralStringParser &parser)
 {
@@ -30,6 +37,25 @@ bool DepthDBWithVotesImpl::postprocessFile(const cv::Mat &mat, GeneralStringPars
         voteClassCount_ = joints.size();
 
     return true;
+}
+
+
+void DepthDBWithVotesImpl::processHeader(const std::string &header)
+{
+    std::vector< std::string > splitResult;
+
+    split(header,",",splitResult);
+
+    std::cerr << splitResult.size() << std::endl;
+
+    isRelative_.resize((splitResult.size()-1)/2,true);
+
+    for(int i=1; i<splitResult.size(); i+=2){
+        std::cerr << "vote index: " << (i-1)/2 << " splitResult[i]: " << splitResult[i] << std::endl;
+        if(strcmp(splitResult[i].c_str(),"a") == 0){
+            isRelative_[(i-1)/2] = false;
+        }
+    }
 }
 
 
@@ -54,3 +80,4 @@ bool DepthDBWithVotesImpl::getDataPointVote(index_type i, std::vector<cv::Point2
 
     return true;
 }
+

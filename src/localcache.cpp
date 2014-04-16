@@ -17,14 +17,7 @@ LocalCache::LocalCache(const std::string &name, const std::string &localtmpdir)
 
     localtmpdir_ = replace_substr(localtmpdir,"\\" , "/");
 
-    std::vector<std::string> buffer;
-    split(std::string(name),"\\/",buffer);
-
-    if(buffer.size()>0){
-        progName_ = buffer[buffer.size()-1];
-    }else{
-        throw std::invalid_argument("could not extract program name from argument");
-    }
+    progName_ = replace_substr(name,"\\" , "/");
 
     if(localtmpdir_.empty()){
 

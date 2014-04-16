@@ -9,15 +9,22 @@
 
 #define ENABLE_OVERFLOW_CHECKS
 
+
+
 class VotesStats
 {
     typedef std::list<cv::Point2i> voteVector;
 public:
 
     typedef voteVector::const_iterator const_iterator;
+
+    /*define aggregation matrix*/
+    typedef unsigned short mat_elem_type;
+    #define MATTYPE CV_16UC1
+
     typedef unsigned int element_count;
 
-    VotesStats(unsigned char voteClasses = 0):
+    VotesStats(unsigned char voteClasses = 0, unsigned int thr2 = 300*300):
         mx_(voteClasses,0),
         my_(voteClasses,0),
         mx2_(voteClasses,0),
@@ -27,7 +34,7 @@ public:
         votes_(voteClasses,voteVector())
 
     {
-        dthreashold2_ = 100*100;
+        dthreashold2_ = thr2;
         pointCount_=0;
         voteClasses_ = voteClasses;
         variance_ = -1;
@@ -86,7 +93,11 @@ public:
         return voteClasses_;
     }
 
+    /*two times faster, because the size is set*/
     void FinalizeDistribution(cv::Size maxsize);
+
+    /*slower, but no need to set the size*/
+    void FinalizeDistribution();
 
     const cv::Mat &Distribution(unsigned char voteClass, cv::Point2i &center) const {
 
@@ -98,18 +109,25 @@ public:
 
     double VoteVariance();
 
-    double normalizedVoteVariance();
+    double NormalizedVoteVariance();
 
     bool Serialize(std::ostream &stream) const;
     bool SerializeChar(std::ostream &stream) const;
     bool Deserialize(std::istream &stream);
 
-    virtual VotesStats DeepClone() const
+    VotesStats DeepClone() const
     {
         return VotesStats(*this);
     }
 
+    element_count votesPerVoteClass(unsigned char voteClass) const {
+        return votesCount_[voteClass];
+    }
+
 private:
+
+    void findMinMax(unsigned char vc, cv::Point &min, cv::Point &max) const;
+//    void normalizeMat(unsigned char vc);
 
     void serializeMatrix(std::ostream &out,const cv::Mat &mat) const;
     void deserializeMatrix(std::istream &out,cv::Mat &mat);
@@ -140,7 +158,7 @@ private:
     std::vector< cv::Point2i > centers_;
     std::vector<cv::Point2i> container_;
 
-    int dthreashold2_;
+    unsigned int dthreashold2_;
     unsigned char voteClasses_;
     element_count pointCount_;
     bool fullStats_;

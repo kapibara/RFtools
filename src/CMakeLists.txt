@@ -1,10 +1,12 @@
 set(EXECCL DepthRFCL)
 set(EXECH DepthRFHOUGH)
+set(EXEREG DepthRFReg)
 set(FEATUREGEN FeatureGen)
 set(TESTS tests)
 
 set(CL_FOLDER classification)
 set(H_FOLDER hough)
+set(REG_FOLDER regression)
 
 set(CL_HEADERS ${CL_FOLDER}/depthdb.h /
             ${CL_FOLDER}/classstats.h /
@@ -17,6 +19,11 @@ set(HOUGH_HEADERS ${H_FOLDER}/houghtrainingcontext.h /
                   ${H_FOLDER}/votesstats.h /
                   ${H_FOLDER}/depthdbwithvotes.h /
                   ${H_FOLDER}/houghvotesstats.h /
+)
+
+set(REG_HEADERS ${REG_FOLDER}/votesstatst.h /
+                ${REG_FOLDER}/depthdbreg.h /
+                ${REG_FOLDER}/regtrainingcontext.h /
 )
 
 set(GENERAL_HEADERS /
@@ -37,6 +44,7 @@ set(GENERAL_HEADERS /
             nodedistributionimagestats.h /
             colorgenerator.h /
             configuration.h /
+            copyfile.h /
 )
 
 set(CL_SOURCE ${CL_FOLDER}/depthdb.cpp /
@@ -50,6 +58,11 @@ set(HOUGH_SOURCE ${H_FOLDER}/houghtrainingcontext.cpp /
                  ${H_FOLDER}/votesstats.cpp /
                  ${H_FOLDER}/depthdbwithvotes.cpp /
                  ${H_FOLDER}/houghvotesstats.cpp /
+)
+
+set(REG_SOURCE ${REG_FOLDER}/votesstatst.cpp /
+               ${REG_FOLDER}/depthdbreg.cpp /
+               ${REG_FOLDER}/regtrainingcontext.cpp /
 )
 
 set(GENERAL_SOURCE  /
@@ -70,6 +83,7 @@ set(GENERAL_SOURCE  /
                     nodedistributionimagestats.cpp /
                     colorgenerator.cpp /
                     configuration.cpp /
+                    copyfile.cpp
 )
 
 #required to see the code in QT creator only...
@@ -90,11 +104,12 @@ add_executable(${EXECCL} main_cl.cpp ${CL_SOURCE} ${CL_HEADERS} ${GENERAL_HEADER
 add_executable(${EXECH} main_h.cpp ${HOUGH_SOURCE} ${HOUGH_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
 add_executable(${TESTS} tests.cpp ${CL_SOURCE} ${CL_HEADERS} ${HOUGH_SOURCE} ${HOUGH_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
 add_executable(${FEATUREGEN} feature_gen.cpp ${GENERAL_SOURCE})
-
+add_executable(${EXEREG} main_r.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE})
 
 
 target_link_libraries(${EXECCL} ${OpenCV_LIBS} ${Boost_LIBS})
 target_link_libraries(${EXECH} ${OpenCV_LIBS} ${Boost_LIBS})
+target_link_libraries(${EXEREG} ${OpenCV_LIBS} ${Boost_LIBS})
 target_link_libraries(${TESTS} ${OpenCV_LIBS} ${Boost_LIBS})
 target_link_libraries(${FEATUREGEN} ${OpenCV_LIBS} ${Boost_LIBS})
 
@@ -102,3 +117,5 @@ target_link_libraries(${FEATUREGEN} ${OpenCV_LIBS} ${Boost_LIBS})
 install(TARGETS ${EXECH} DESTINATION .)
 install(TARGETS ${TESTS} DESTINATION .)
 install(TARGETS ${FEATUREGEN} DESTINATION .)
+install(TARGETS ${EXEREG} DESTINATION .)
+

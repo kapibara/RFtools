@@ -13,9 +13,9 @@ DepthFileBasedImageDBImpl::DepthFileBasedImageDBImpl(const std::string &base,
     sub_ = new StubSubsampler();
 }
 
-bool DepthFileBasedImageDBImpl::loadDB(const std::string &filename, GeneralStringParser &stringParser){
+bool DepthFileBasedImageDBImpl::loadDB(const std::string &filename, GeneralStringParser &stringParser, bool hasHeader){
     try{
-        readFiles(filename,stringParser);
+        readFiles(filename,stringParser, hasHeader);
         return true;
     }catch(std::exception &e){
         std::cerr << "expcetion caught: " << e.what() << std::endl;
@@ -59,13 +59,23 @@ bool DepthFileBasedImageDBImpl::getDataPoint(index_type i, std::string &file, cv
     return true;
 }
 
-void DepthFileBasedImageDBImpl::readFiles(const std::string &file, GeneralStringParser &parser)
+void DepthFileBasedImageDBImpl::readFiles(const std::string &file,  GeneralStringParser &parser, bool hasHeader)
 {
     std::ifstream input(file.c_str());
     cv::Mat image;
     std::string tmp,filename;
 
+
+
     if (input.is_open()){
+
+        if (hasHeader){
+            tmp = "";
+
+            input >> tmp;
+            processHeader(tmp);
+            std::cout << "header: " << filename << std::endl;
+        }
 
         while(!input.eof()){
 
@@ -129,6 +139,11 @@ bool DepthFileBasedImageDBImpl::postprocessFile(const cv::Mat &mat,GeneralString
     }
 
     return true;
+}
+
+void DepthFileBasedImageDBImpl::processHeader(const std::string &header)
+{
+    // do nothing
 }
 
 void DepthFileBasedImageDBImpl::push_pixel(in_image_index index){

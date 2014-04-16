@@ -32,9 +32,15 @@ Configuration::Configuration(std::istream &input)
     bpt::ptree properties =  subtree.get_child("properties");
     dbFile_ = trim_with_return(properties.get<std::string>("dbfile"));
     testOnly_ = properties.get<int>("testonly")!=0;
+
+    testOnTrain_ = (properties.get<int>("testontrain",0)!=0) & ~testOnly_;
+    testOnTest_ = (properties.get<int>("testontest",1)!=0);
+
+    dbHasHeader_ = properties.get<int>("dbhasheader",0)!=0;
     testTrainSplit_ = properties.get<float>("testtrainsplit");
     subsamplerRate_ = properties.get<float>("subsamplerrate",-1);
     varianceThr_ = properties.get<float>("nodevarthr",-1);
+    voteDistThr_ = properties.get<float>("votethr",100);
 
     if (testOnly_){
         forestLocation_ = properties.get<std::string>("forestfile");

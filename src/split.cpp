@@ -6,7 +6,7 @@ void split(const std::string &str, const std::string &symbols, std::vector<std::
     int stop = 0;
 
     while(((newpos=str.find_first_of(symbols,old))!=std::string::npos)){
-        if (newpos-old>0){
+        if (newpos-old>0 | old==0){
             result.push_back(str.substr(old,newpos-old));
         }
 

@@ -2,8 +2,15 @@
 #include "Random.h"
 #include "hough/votesstats.h"
 #include "hough/houghvotesstats.h"
+#include "hough/depthdbwithvotes.h"
+
+#include "regression/votesstatst.h"
+#include "regression/depthdbreg.h"
+#include "serialization.h"
+#include "rfutils.h"
 
 #include <fstream>
+#include <memory>
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 using namespace std;
@@ -179,53 +186,116 @@ void testVotesStatsAndHoughStats()
     hvstats2.Serialize(out2);
 }
 
-class A
+void testFileDBIndexing(SubindexFileBasedImageDB &db)
 {
-public:
-    A(int i){
-        std::cerr << "A()" << std::endl;
-        i_ = i;
+    std::vector<int> imgIds(db.Count(),0);
+    std::vector<int> x(db.Count(),0);
+    std::vector<int> y(db.Count(),0);
+
+    std::string tmpstr;
+    cv::Point2i current;
+
+    for(int i=0; i<db.Count(); i++){
+        db.getDataPoint(i,tmpstr,current);
+        imgIds[i] = db.getImageIdx(i);
+        x[i] = current.x;
+        y[i] = current.y;
     }
 
-    A(const A &){
-        i_ = 0;
-        std::cerr << "A(A)" << std::endl;
+    std::ofstream ids("imgIds",std::ios_base::binary);
+    serializeVector<int>(ids,imgIds);
+    ids.close();
+
+    std::ofstream xvals("xVals",std::ios_base::binary);
+    serializeVector<int>(xvals,x);
+    xvals.close();
+
+    std::ofstream yvals("yVals",std::ios_base::binary);
+    serializeVector<int>(yvals,y);
+    yvals.close();
+}
+
+void testCameraTransform()
+{
+    DepthDBWithVotesSImpl<float,3> db;
+    db.loadDB("/home/kuznetso/tmp/HoughTests/Test3D/files.txt",true);
+    cv::Mat m;
+    cv::Point2i p2D;
+    cv::Vec<float,3> p3D;
+    std::vector<cv::Vec<float,3> > v;
+
+    std::cout << "db image size: " << db.getSize() << std::endl;
+
+    v.resize(1);
+
+    for(int i=0; i< db.Count(); i++){
+        db.getDataPoint(i,m,p2D);
+        p3D = db.to3D(p2D,m.at<unsigned short>(p2D));
+        db.getDataPointVote(i,v);
+
+            std::cerr << "p2D: " << p2D << std::endl;
+            std::cerr << "v[0]: " << v[0][0] << ";" << v[0][1] << ";" << v[0][2] << std::endl;
+            std::cerr << "p3D: " << p3D << std::endl;
+            std::cerr << "probably wrong calibration parameters" << std::endl;
+
     }
-    ~A(){
-        std::cerr << "~A():" << i_ << std::endl;
+}
+
+void test3DPoints()
+{
+    DepthDBWithVotesSImpl<float,3> db;
+    //assume only one image in the files.txt"
+    db.loadDB("/home/kuznetso/tmp/HoughTests/Head_NT3DTest/files.txt",true);
+    cv::Vec<float,3> p3D;
+    cv::Point2i p2D;
+    cv::Mat m;
+    std::vector<cv::Vec<float,3> > v;
+    std::ofstream out("pc.csv");
+
+    v.resize(2);
+
+    for(int i=0; i< db.Count(); i++){
+        db.getDataPoint(i,m,p2D);
+        p3D = db.to3D(p2D,m.at<unsigned short>(p2D));
+
+        out << p3D[0] << "," << p3D[1] << "," << p3D[2] << std::endl;
     }
 
-private:
-    int i_;
-};
+    //one image only..
+    db.getDataPointVote(0,v);
 
-A foo(){
-    A a(10);
+    out << v[0][0] << "," << v[0][1] << "," << v[0][2] << std::endl;
+    out << v[1][0] << "," << v[1][1] << "," << v[1][2] << std::endl;
 
-    return a;
+    out.close();
 }
 
 int main(int argc, char **argv)
 {
 
-    A a(11);
-    A b = foo();
 
-    return 0;
 /*    DepthDBClassImage db;
     db.loadDB(argv[1]);
     testDepthDBSubindex(db);*/
+/*
+    Random random;
+    DepthFileBasedImageDBImpl db;
+    SimpleParser parser;
+    db.loadDB("/home/kuznetso/tmp/HoughTests/Head_Full/files.txt",parser);
+    std::auto_ptr<SubindexFileBasedImageDB> test;
+    std::auto_ptr<SubindexFileBasedImageDB> train;
+    RFUtils::splitRandom<SubindexFileBasedImageDB>(random,db,train,test,0.5);
 
-/*    VotesStats stats(1);
-    DepthDBWithVotesImpl db;
-    db.loadDB(argv[1]);
 
-    //same image
+    testFileDBIndexing(*test);*/
+    test3DPoints();
+
+/*    //same image
     stats.Aggregate(db,0);
     stats.Aggregate(db,1);
     stats.Aggregate(db,2);
 
     std::cout << "VoteVariance: " << stats.VoteVariance() << std::endl;*/
 
-    testVotesStatsAndHoughStats();
+ //   testVotesStatsAndHoughStats();
 }

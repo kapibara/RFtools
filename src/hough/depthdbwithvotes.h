@@ -2,8 +2,6 @@
 #define DEPTHDBWITHVOTES_H
 
 #include "depthimagedb.h"
-#include "classification/depthdb.h"
-
 #include "string2number.hpp"
 #include "split.h"
 
@@ -36,36 +34,8 @@ public:
     typedef unsigned char vote_class_count;
     virtual bool getDataPointVote(DepthFileBasedImageDB::index_type i, std::vector<cv::Point2i> &vote) = 0;
     virtual vote_class_count voteClassCount() = 0;
-};
-
-class DepthDBWithVotesImpl: public DepthFileBasedImageDBImpl, public DepthDBWithVotes
-{
-public:
-
-
-    DepthDBWithVotesImpl(const std::string &basepath="");
-
-    bool loadDB(const std::string &filename);
-
-    bool getDataPointVote(index_type i, std::vector<cv::Point2i> &vote);
-
-    void setRelative(vote_class_count cl, bool value)
-    {
-        isRelative_[cl] = value;
-    }
-
-    vote_class_count voteClassCount(){
-        return voteClassCount_;
-    }
-
-protected:
-    bool postprocessFile(const cv::Mat &image, GeneralStringParser &parser);
-
-private:
-
-    vote_class_count voteClassCount_;
-    std::vector<bool> isRelative_;
-    std::vector<std::vector<cv::Point2i> > votes_; //stores joint locations for each image
+    virtual void setRelative(vote_class_count cl, int value) = 0;
+    virtual int getRelative(vote_class_count cl) const = 0;
 };
 
 class DepthDBWithVotesSubindex: public SubindexFileBasedImageDB, public DepthDBWithVotes
@@ -85,6 +55,56 @@ public:
         return dynamic_cast<DepthDBWithVotes &>(source_).voteClassCount();
     }
 
+    void setRelative(vote_class_count cl, int value){
+        dynamic_cast<DepthDBWithVotes &>(source_).setRelative(cl,value);
+    }
+
+    int getRelative(vote_class_count cl) const
+    {
+        return dynamic_cast<DepthDBWithVotes &>(source_).getRelative(cl);
+    }
+
 };
+
+
+class DepthDBWithVotesImpl: public DepthFileBasedImageDBImpl, public DepthDBWithVotes
+{
+public:
+
+
+    DepthDBWithVotesImpl(const std::string &basepath="");
+
+    bool loadDB(const std::string &filename, bool hasHeader);
+
+    bool getDataPointVote(index_type i, std::vector<cv::Point2i> &vote);
+
+    void setRelative(vote_class_count cl, int value)
+    {
+        isRelative_[cl] = value;
+    }
+
+    int getRelative(vote_class_count cl) const
+    {
+        return isRelative_[cl];
+    }
+
+    vote_class_count voteClassCount(){
+        return voteClassCount_;
+    }
+
+
+protected:
+    bool postprocessFile(const cv::Mat &image, GeneralStringParser &parser);
+
+    void processHeader(const std::string &header);
+
+private:
+
+    vote_class_count voteClassCount_;
+
+    std::vector<int> isRelative_;
+    std::vector<std::vector<cv::Point2i> > votes_; //stores joint locations for each image
+};
+
 
 #endif // DEPTHDBWITHVOTES_H

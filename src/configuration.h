@@ -16,22 +16,26 @@ public:
     Configuration();
     Configuration(std::istream &config);
 
-    bool testOnly(){return testOnly_;}
-    bool serializeInfo() {return serializeInfo_;}
-    bool useSubsampler() {return subsamplerRate_>0;}
-    bool discardHighVar() {return varianceThr_>0;}
-    float testTrainSplit() {return testTrainSplit_;}
-    float subsamplerRate() {return subsamplerRate_;}
-    float nodeVarThr() {return varianceThr_;}
+    bool testOnly() const{return testOnly_;}
+    bool serializeInfo() const{return serializeInfo_;}
+    bool useSubsampler() const{return subsamplerRate_>0;}
+    bool discardHighVar() const{return varianceThr_>0;}
+    bool databaseHasHeader() const{return dbHasHeader_;}
+    bool testOnTrain() const{return testOnTrain_;}
+    bool testOnTest() const{return testOnTest_;}
+    float testTrainSplit() const{return testTrainSplit_;}
+    float subsamplerRate() const{return subsamplerRate_;}
+    float nodeVarThr() const{return varianceThr_;}
+    int voteDistThr() const{return voteDistThr_;}
 
-    std::string cacheFolderName() {return cacheFolderName_;}
-    std::string databaseFile() {return dbFile_;}
-    std::string forestFile() {return forestLocation_;}
-    std::string featuresFile() {return featuresLocation_;}
+    std::string cacheFolderName() const{return cacheFolderName_;}
+    std::string databaseFile() const{return dbFile_;}
+    std::string forestFile() const{return forestLocation_;}
+    std::string featuresFile() const{return featuresLocation_;}
 
-    MRF::TrainingParameters forestParameters() {return forestParam_;}
-    DepthFeatureParameters featureParameters() {return dfParams_;}
-    Factory factoryType() {return factory_;}
+    MRF::TrainingParameters forestParameters() const{return forestParam_;}
+    DepthFeatureParameters featureParameters() const{return dfParams_;}
+    Factory factoryType() const{return factory_;}
 
 private:
 
@@ -39,7 +43,9 @@ private:
 
     bool testOnly_;
     bool serializeInfo_;
-
+    bool dbHasHeader_;
+    bool testOnTrain_;
+    bool testOnTest_;
 
     Factory factory_;
     std::string forestType_;
@@ -51,6 +57,7 @@ private:
     float varianceThr_;
 
     int candidatesCount_;
+    int voteDistThr_;
     float testTrainSplit_;
 
     DepthFeatureParameters  dfParams_;

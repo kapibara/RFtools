@@ -13,6 +13,7 @@
 #include "localcache.h"
 #include "TrainingParameters.h"
 #include "stubtrainingcontext.h"
+#include "hough/depthdbwithvotes.h"
 #include "hough/houghtrainingcontext.h"
 #include "stubstats.h"
 #include "string2number.hpp"
@@ -20,6 +21,7 @@
 #include "featurepool.h"
 #include "nodedistributionimagestats.h"
 #include "configuration.h"
+#include "copyfile.h"
 
 #include <time.h>
 
@@ -27,7 +29,143 @@
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 
-ITrainingContext<DepthFeature,VotesStats>  *createTrainingContext(Configuration &config, LocalCache &cache, uchar classCount)
+void applyForest(Forest<DepthFeature, VotesStats> &forest,
+                 ProgressStream &progress,
+                 DepthDBWithVotesSubindex &db,
+                 const Configuration &config,
+                 const std::string &suffix,
+                 LocalCache &cache)
+{
+    std::ostream &log = cache.log();
+
+    std::vector<std::vector<int> > leafIndicesPerTree;
+    forest.Apply(db,leafIndicesPerTree,&progress);
+
+    std::ostream &leafIds = cache.openBinStream("leafIds"+suffix);
+    serializeVector<int>(leafIds,leafIndicesPerTree[0]);
+
+    log << "forest applied" << std::endl;
+
+    cv::Point2i current;
+    cv::Size imgSize(480,640);
+    std::string tmpstr;
+    std::vector< std::vector <HoughVotesStats> > fullStats;
+
+    for (int v = 0; v < db.voteClassCount(); v++){
+        fullStats.push_back(std::vector<HoughVotesStats>());
+
+        for(int i=0; i< db.imageCount(); i++){
+            if (db.getRelative(v)){
+                fullStats.back().push_back(HoughVotesStats(imgSize,v));
+            }
+            else{
+                fullStats.back().push_back(HoughVotesStats(imgSize,v,cv::Point2i(240,320)));
+            }
+       }
+    }
+
+
+    log << "full stats vector created" << std::endl;
+    log << "image count: " << db.imageCount() << std::endl;
+
+    std::vector<int> imgIds(db.Count(),0);
+    std::vector<int> x(db.Count(),0);
+    std::vector<int> y(db.Count(),0);
+    std::vector<double> variance(db.Count(),0);
+
+    VotesStats *trStats;
+
+    for(int i=0; i<db.Count(); i++){
+        db.getDataPoint(i,tmpstr,current);
+        imgIds[i] = db.getOriginalImageIdx(i);
+        x[i] = current.x;
+        y[i] = current.y;
+        for(int t=0; t<forest.TreeCount(); t++)
+        {
+
+            if (leafIndicesPerTree[t][i]>=0){
+                trStats = &(forest.GetTree(t).GetNode(leafIndicesPerTree[t][i]).TrainingDataStatistics);
+                trStats->FinalizeDistribution();
+                variance[i] = trStats->VoteVariance();
+                if(!config.discardHighVar() || variance[i] < config.nodeVarThr()){
+                    for(int v = 0; v < db.voteClassCount(); v++){
+                        if(db.getRelative(v)){
+                            fullStats[v][db.getImageIdx(i)].Aggregate(current,*trStats);
+                        }else{
+                            fullStats[v][db.getImageIdx(i)].Aggregate(cv::Point2i(0,0),*trStats);
+                        }
+
+                    }
+                }
+            }
+        }
+    }
+
+    std::ostream &agforest = cache.openBinStream("aggregatedForest"+suffix);
+    forest.Serialize(agforest);
+
+    std::ostream &vars = cache.openBinStream("vars"+suffix);
+    serializeVector<double>(vars,variance);
+
+    std::ostream &ids = cache.openBinStream("imgIds"+suffix);
+    serializeVector<int>(ids,imgIds);
+
+    std::ostream &xvals = cache.openBinStream("xVals"+suffix);
+    serializeVector<int>(xvals,x);
+
+    std::ostream &yvals = cache.openBinStream("yVals"+suffix);
+    serializeVector<int>(yvals,y);
+
+
+    log << "statistic aggregated" << std::endl;
+
+    std::string filename;
+
+    std::vector<bool> seen(db.imageCount(),false);
+    std::vector<cv::Point2i> votes(db.voteClassCount());
+    cv::Point2i p;
+
+    std::ofstream *stream;
+
+    for(int i=0; i<db.Count(); i++){
+        std::cerr.flush();
+        if(!seen[db.getImageIdx(i)])
+        {
+            seen[db.getImageIdx(i)] = true;
+            log << "i: " << i <<
+                   " filename: " << db.imageIdx2Filename(db.getOriginalImageIdx(i)) <<
+                   " imindex: "  << db.getOriginalImageIdx(i) << std::endl;
+
+            db.getDataPointVote(i,votes);
+            db.getDataPoint(i,filename,p);
+
+            for(int v = 0; v < db.voteClassCount(); v++){
+
+                if (db.getRelative(v)){
+                    fullStats[v][db.getImageIdx(i)].setGT(votes[v] + p);
+                }
+                else{
+                    fullStats[v][db.getImageIdx(i)].setGT(votes[v]);
+                }
+
+                filename = "img_" + num2str<int>(db.getOriginalImageIdx(i))+ "_" + num2str<int>(v)+suffix;
+                stream = (std::ofstream *)&cache.openBinStream(filename);
+                fullStats[v][db.getImageIdx(i)].Serialize(*stream);
+                stream->close();
+
+                fullStats[v][db.getImageIdx(i)].Serialize(cache.base() + filename + std::string(".png"));
+
+            }
+        }
+    }
+
+    log << "results serialized" << std::endl;
+
+}
+
+ITrainingContext<DepthFeature,VotesStats>  *createTrainingContext(Configuration &config,
+                                                                  LocalCache &cache,
+                                                                  uchar classCount)
 {
     ITrainingContext<DepthFeature,VotesStats> *context = 0;
     FeatureAccomulator *accomulator = 0;
@@ -44,14 +182,14 @@ ITrainingContext<DepthFeature,VotesStats>  *createTrainingContext(Configuration 
         cache.log() << "feature factory: FeaturePool" << std::endl;
         std::ifstream in(config.featuresFile().c_str());
         FeaturePool *fp = new FeaturePool(in);
-        context =  new HoughTrainingContext<FeaturePool>(classCount,*fp);
+        context =  new HoughTrainingContext<FeaturePool>(classCount,*fp,config.voteDistThr()*config.voteDistThr());
         break;
     }
     case Configuration::FullFeaturesFactory:
     {
         cache.log() << "feature factory: FullDepthFeatureFactory" << std::endl;
         FullDepthFeatureFactory *fff = new FullDepthFeatureFactory(config.featureParameters());
-        context = new HoughTrainingContext<FullDepthFeatureFactory>(classCount,*fff);
+        context = new HoughTrainingContext<FullDepthFeatureFactory>(classCount,*fff,config.voteDistThr()*config.voteDistThr());
         if (config.serializeInfo()){
             ((HoughTrainingContext<FullDepthFeatureFactory> *)context)->setFeatureAccomulator(accomulator);
         }
@@ -61,7 +199,7 @@ ITrainingContext<DepthFeature,VotesStats>  *createTrainingContext(Configuration 
     {
         cache.log() << "feature factory: PartialDepthFeatureFactory" << std::endl;
         PartialDepthFeatureFactory *pff = new PartialDepthFeatureFactory(config.featureParameters());
-        context = new HoughTrainingContext<PartialDepthFeatureFactory>(classCount,*pff);
+        context = new HoughTrainingContext<PartialDepthFeatureFactory>(classCount,*pff,config.voteDistThr()*config.voteDistThr());
         if (config.serializeInfo()){
             ((HoughTrainingContext<PartialDepthFeatureFactory> *)context)->setFeatureAccomulator(accomulator);
         }
@@ -94,6 +232,9 @@ int main(int argc, char **argv)
 
     std::ostream &log = cache.log();
 
+    log << "copying config file" << std::endl;
+    copyfile(argv[1],cache.base() + "config.xml");
+
     log << "config name: " << argv[1] << std::endl;
 
     try{
@@ -108,10 +249,7 @@ int main(int argc, char **argv)
             log << "using subsampler - rate: " << config.subsamplerRate() << std::endl;
             db.setSubsampler(new RandomSubsampler(config.subsamplerRate(),random));
         }
-        db.loadDB(config.databaseFile());
-        db.setRelative(1,false);
-        db.setRelative(2,false);
-        db.setRelative(3,false);
+        db.loadDB(config.databaseFile(),config.databaseHasHeader());
 
         log << "loading from: " << config.databaseFile() << std::endl;
         log << "number of images: " << db.imageCount() << std::endl;
@@ -175,98 +313,15 @@ int main(int argc, char **argv)
             log << "forest deserialized" << std::endl;
         }
 
-        std::vector<std::vector<int> > leafIndicesPerTree;
-        forest->Apply(*test,leafIndicesPerTree,&progress);
-
-        std::ostream &leafIds = cache.openBinStream("leafIds");
-        serializeVector<int>(leafIds,leafIndicesPerTree[0]);
-
-        log << "forest applied" << std::endl;
-
-        cv::Point2i current;
-        std::string tmpstr;
-        std::vector< std::vector <HoughVotesStats> > fullStats;
-
-        for (int v = 0; v < test->voteClassCount(); v++){
-            fullStats.push_back(std::vector<HoughVotesStats>());
-
-            for(int i=0; i< test->imageCount(); i++){
-                fullStats.back().push_back(HoughVotesStats(cv::Size(640,480),v));
-           }
+        if (config.testOnTrain()){
+            log << "applying forest on training data" << std::endl;
+            applyForest(*forest,progress,*train,config,"_train",cache);
+        }
+        if (config.testOnTest()){
+            log << "applying forest on test data" << std::endl;
+            applyForest(*forest,progress,*test,config,"_test",cache);
         }
 
-
-        log << "full stats vector created" << std::endl;
-        log << "image count: " << test->imageCount() << std::endl;
-
-        std::vector<int> imgIds(test->Count(),0);
-        std::vector<int> x(test->Count(),0);
-        std::vector<int> y(test->Count(),0);
-
-        VotesStats *trStats;
-
-        for(int i=0; i<test->Count(); i++){
-            test->getDataPoint(i,tmpstr,current);
-            imgIds[i] = test->getImageIdx(i);
-            x[i] = current.x;
-            y[i] = current.y;
-            for(int t=0; t<forest->TreeCount(); t++)
-            {
-                trStats = &(forest->GetTree(t).GetNode(leafIndicesPerTree[t][i]).TrainingDataStatistics);
-                trStats->FinalizeDistribution(cv::Size(640,480));
-
-                if (leafIndicesPerTree[t][i]>=0){
-                    if(!config.discardHighVar() || trStats->normalizedVoteVariance() < config.nodeVarThr()){
-                        for(int v = 0; v < test->voteClassCount(); v++){
-                            fullStats[v][test->getImageIdx(i)].Aggregate(current,*trStats);
-                        }
-                    }
-                }
-            }
-        }
-
-        std::ostream &ids = cache.openBinStream("imgIds");
-        serializeVector<int>(ids,imgIds);
-
-        std::ostream &xvals = cache.openBinStream("xVals");
-        serializeVector<int>(xvals,x);
-
-        std::ostream &yvals = cache.openBinStream("yVals");
-        serializeVector<int>(yvals,y);
-
-
-        log << "statistic aggregated" << std::endl;
-
-        std::string filename;
-
-        std::vector<bool> seen(test->imageCount(),false);
-        std::vector<cv::Point2i> votes(test->voteClassCount());
-        cv::Point2i p;
-
-        std::ofstream *stream;
-
-        for(int i=0; i<test->Count(); i++){
-            if(!seen[test->getImageIdx(i)])
-            {
-                seen[test->getImageIdx(i)] = true;
-                log << "i: " << i <<
-                       " filename: " << test->imageIdx2Filename(test->getOriginalImageIdx(i)) <<
-                       " imindex: "  << test->getOriginalImageIdx(i) << std::endl;
-
-                test->getDataPointVote(i,votes);
-                test->getDataPoint(i,filename,p);
-                for(int v = 0; v < test->voteClassCount(); v++){
-                    fullStats[v][test->getImageIdx(i)].setGT(votes[v]+p);
-                    filename = "img_" + num2str<int>(test->getOriginalImageIdx(i))+ "_" + num2str<int>(v);
-                    stream = (std::ofstream *)&cache.openBinStream(filename);
-                    fullStats[v][test->getImageIdx(i)].Serialize(*stream);
-                    stream->close();
-                    fullStats[v][test->getImageIdx(i)].Serialize(cache.base() + filename + std::string(".png"));
-               }
-            }
-        }
-
-        log << "results serialized" << std::endl;
 
     }catch(std::exception e){
         std::cerr << "exception caught: " << e.what() << std::endl;

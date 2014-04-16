@@ -1,6 +1,8 @@
 #include "votesstats.h"
 
-//#define OLD_DESERIALIZATION
+#define BOUNDARY_CHECK
+
+#include <opencv2/opencv.hpp>
 
 void VotesStats::Aggregate(MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection& data, unsigned int index)
 {
@@ -219,7 +221,7 @@ bool VotesStats::Deserialize(std::istream &stream)
     for(int i=0; i<matrixStatsSize ; i++){
         stream.read((char *)&rows,sizeof(rows));
         stream.read((char *)&cols,sizeof(cols));
-        matrixStats_.push_back(cv::Mat(rows,cols,CV_16UC1));
+        matrixStats_.push_back(cv::Mat(rows,cols,MATTYPE));
         deserializeMatrix(stream,matrixStats_.back());
         centers_.push_back(cv::Point2i());
         stream.read((char *)&(centers_.back().x),sizeof(centers_.back().x));
@@ -241,6 +243,85 @@ void VotesStats::deserializeMatrix(std::istream &out, cv::Mat &mat)
     }
 }
 
+void VotesStats::FinalizeDistribution()
+{
+    if(matrixStats_.size()==0){
+        cv::Point2i min,max;
+        cv::Size s;
+        mat_elem_type *ptr;
+
+        for(int i = 0; i < voteClasses_; i++){
+            findMinMax(i,min,max);
+
+            s.width = max.x - min.x +1;
+            s.height = max.y - min.y +1;
+
+
+            centers_.push_back(-min);
+            matrixStats_.push_back(cv::Mat(s,MATTYPE));
+
+            (matrixStats_.back()).setTo(0);
+            ptr = (matrixStats_.back()).ptr<mat_elem_type>(0);
+
+            if(!(matrixStats_.back()).isContinuous()){
+                std::cerr << "non-continious matrix!" << std::endl;
+            }
+
+            for(const_iterator itor = begin(i); itor != end(i); itor++){
+                ptr[point2index((*itor)-min,s)]+=1;
+            }
+
+        }
+    }
+}
+
+/*
+void VotesStats::normalizeMat(unsigned char vc)
+{
+    if(votesCount_[vc]>0){
+        if(!matrixStats_[vc].isContinuous()){
+            std::cerr << "VotesStats::normalizeMat: matrix is not conitinous" << std::endl;
+        }
+
+        mat_elem_type *ptr = matrixStats_[vc].ptr<mat_elem_type>(0);
+
+        for(int i=0; i<matrixStats_[vc].rows*matrixStats_[vc].cols; i++){
+            ptr[i] = ptr[i]/votesCount_[vc];
+        }
+    }
+}
+*/
+
+void VotesStats::findMinMax(unsigned char vc, cv::Point &min, cv::Point &max) const
+{
+    const_iterator itor;
+
+    itor = begin(vc);
+    if (itor != end(vc)){
+
+        min.x = (*itor).x;
+        min.y = (*itor).y;
+        max.x = (*itor).x;
+        max.y = (*itor).y;
+
+        itor++;
+
+        for(;itor!=end(vc);itor++){
+            if((*itor).x < min.x )
+                min.x = (*itor).x;
+            if((*itor).y < min.y)
+                min.y = (*itor).y;
+            if((*itor).x > max.x)
+                max.x = (*itor).x;
+            if((*itor).y > max.y)
+                max.y = (*itor).y;
+        }
+    }else{
+        min.x = min.y = max.x = max.y = 0;
+    }
+
+}
+
 //aggregate votes distribution in a matrix
 void VotesStats::FinalizeDistribution(cv::Size maxsize)
 {
@@ -250,15 +331,13 @@ void VotesStats::FinalizeDistribution(cv::Size maxsize)
 
         int min_x,min_y,max_x,max_y;
         const_iterator itor;
-        unsigned short *ptr;
-
-
+        mat_elem_type *ptr;
 
         for(int i = 0; i < voteClasses_; i++){
 
-            cv::Mat m = cv::Mat(maxsize,CV_16UC1);
+            cv::Mat m = cv::Mat(maxsize,MATTYPE);
             m.setTo(0);
-            ptr = m.ptr<unsigned short>(0);
+            ptr = m.ptr<mat_elem_type>(0);
 
             if(!m.isContinuous()){
                 std::cerr << "non-continious matrix!" << std::endl;
@@ -273,7 +352,7 @@ void VotesStats::FinalizeDistribution(cv::Size maxsize)
                 max_x = (*itor).x;
                 max_y = (*itor).y;
 
-                ptr[point2index((*itor)+center,maxsize)]++;
+                ptr[point2index((*itor)+center,maxsize)]+=1;
 
                 itor++;
 
@@ -286,7 +365,7 @@ void VotesStats::FinalizeDistribution(cv::Size maxsize)
                         max_x = (*itor).x;
                     if((*itor).y > max_y)
                         max_y = (*itor).y;
-                    ptr[point2index((*itor)+center,maxsize)]++;
+                    ptr[point2index((*itor)+center,maxsize)]+=1;
                 }
 
                 min_x += center.x;
@@ -354,7 +433,8 @@ double VotesStats::VoteVariance()
 
 }
 
-double VotesStats::normalizedVoteVariance()
+
+double VotesStats::NormalizedVoteVariance()
 {
     double mx,my,fulld2;
 

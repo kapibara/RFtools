@@ -10,7 +10,7 @@
 class FeatureAccomulator
 {
 public:
-    FeatureAccomulator(std::ostream &out,int statsSize,int count = 10):out_(out)
+    FeatureAccomulator(std::ostream &out,int statsSize,int count = 20):out_(out)
     {
         count_ = count;
         nodeIndex_ = 0;

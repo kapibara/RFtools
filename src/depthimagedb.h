@@ -9,6 +9,7 @@
 #include "arraylist.h"
 #include "subsampler.h"
 #include "imagecache.h"
+#include "split.h"
 
 /*DB interface required to compute depth features*/
 
@@ -23,7 +24,9 @@ class SimpleParser: public GeneralStringParser
 {
 public:
     virtual void setString(const std::string &str){
-        str_ = str;
+        std::vector<std::string> strsplit;
+        split(str,",",strsplit);
+        str_ = strsplit[0];
     }
     virtual std::string getFilename(){
         return str_;
@@ -47,6 +50,7 @@ public:
     virtual bool getDataPoint(index_type i, std::string &file, cv::Point2i &coordinate) = 0;
     virtual bool getDataPoint(index_type i, cv::Mat &img, cv::Point2i &coordinate) = 0;
     virtual fileindex_type getImageIdx(index_type i) const = 0;
+    virtual fileindex_type getOriginalImageIdx(index_type i) const = 0;
     virtual std::string imageIdx2Filename(fileindex_type i) const = 0;
     virtual fileindex_type imageCount() const = 0;
     virtual unsigned int clearCacheCallCount() = 0;
@@ -116,7 +120,7 @@ public:
         delete sub_;
     }
 
-    virtual bool loadDB(const std::string &filename, GeneralStringParser &stringParser);
+    virtual bool loadDB(const std::string &filename, GeneralStringParser &stringParser, bool hasHeader = false);
 
     void setSubsampler(Subsampler *sub)
     {
@@ -129,6 +133,11 @@ public:
 
     fileindex_type getImageIdx(index_type i) const
 
+    {
+        return pointsIndex_[i].first;
+    }
+
+    fileindex_type getOriginalImageIdx(index_type i) const
     {
         return pointsIndex_[i].first;
     }
@@ -163,7 +172,8 @@ protected:
 
     /*redefine this function to add aditional parts of the database*/
     virtual bool postprocessFile(const cv::Mat &image,GeneralStringParser &parser);
-
+    /*redefine this function to add header processing*/
+    virtual void processHeader(const std::string &header);
 
     void push_pixel(in_image_index index);
 
@@ -184,7 +194,7 @@ protected:
 
 private:
     /*reads files one by one*/
-    void readFiles(const std::string &file, GeneralStringParser &parser);
+    void readFiles(const std::string &file, GeneralStringParser &parser, bool hasHeader);
     /*simple imlementation to push pixels to an array; called from postprocessFile()*/
     unsigned int cachCallCount_;
 
