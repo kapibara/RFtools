@@ -38,6 +38,11 @@ void applyForest(Forest<DepthFeature, VotesStats> &forest,
 {
     std::ostream &log = cache.log();
 
+    if(db.Count()==0){
+        log << "empty db; nothing to apply" << std::endl;
+        return;
+    }
+
     std::vector<std::vector<int> > leafIndicesPerTree;
     forest.Apply(db,leafIndicesPerTree,&progress);
 
@@ -47,7 +52,7 @@ void applyForest(Forest<DepthFeature, VotesStats> &forest,
     log << "forest applied" << std::endl;
 
     cv::Point2i current;
-    cv::Size imgSize(480,640);
+    cv::Size imgSize(360,360);
     std::string tmpstr;
     std::vector< std::vector <HoughVotesStats> > fullStats;
 
@@ -55,11 +60,11 @@ void applyForest(Forest<DepthFeature, VotesStats> &forest,
         fullStats.push_back(std::vector<HoughVotesStats>());
 
         for(int i=0; i< db.imageCount(); i++){
-            if (db.getRelative(v)){
+            if (db.isRelative(v)){
                 fullStats.back().push_back(HoughVotesStats(imgSize,v));
             }
             else{
-                fullStats.back().push_back(HoughVotesStats(imgSize,v,cv::Point2i(240,320)));
+                fullStats.back().push_back(HoughVotesStats(imgSize,v,cv::Point2i(180,180)));
             }
        }
     }
@@ -89,7 +94,7 @@ void applyForest(Forest<DepthFeature, VotesStats> &forest,
                 variance[i] = trStats->VoteVariance();
                 if(!config.discardHighVar() || variance[i] < config.nodeVarThr()){
                     for(int v = 0; v < db.voteClassCount(); v++){
-                        if(db.getRelative(v)){
+                        if(db.isRelative(v)){
                             fullStats[v][db.getImageIdx(i)].Aggregate(current,*trStats);
                         }else{
                             fullStats[v][db.getImageIdx(i)].Aggregate(cv::Point2i(0,0),*trStats);
@@ -128,7 +133,6 @@ void applyForest(Forest<DepthFeature, VotesStats> &forest,
     std::ofstream *stream;
 
     for(int i=0; i<db.Count(); i++){
-        std::cerr.flush();
         if(!seen[db.getImageIdx(i)])
         {
             seen[db.getImageIdx(i)] = true;
@@ -141,7 +145,7 @@ void applyForest(Forest<DepthFeature, VotesStats> &forest,
 
             for(int v = 0; v < db.voteClassCount(); v++){
 
-                if (db.getRelative(v)){
+                if (db.isRelative(v)){
                     fullStats[v][db.getImageIdx(i)].setGT(votes[v] + p);
                 }
                 else{
@@ -175,7 +179,7 @@ ITrainingContext<DepthFeature,VotesStats>  *createTrainingContext(Configuration 
         std::ostream &featureOutput = cache.openBinStream("accomulatedFeatures");
         accomulator = new FeatureAccomulator(featureOutput,tp.NumberOfCandidateFeatures*tp.NumberOfCandidateThresholdsPerFeature);
     }
-
+    cache.log() << "distance threashold: " << config.voteDistThr() << std::endl;
     switch(config.factoryType()){
     case Configuration::FeaturePool:
     {
@@ -198,6 +202,7 @@ ITrainingContext<DepthFeature,VotesStats>  *createTrainingContext(Configuration 
     case Configuration::PartialFeaturesFactory:
     {
         cache.log() << "feature factory: PartialDepthFeatureFactory" << std::endl;
+
         PartialDepthFeatureFactory *pff = new PartialDepthFeatureFactory(config.featureParameters());
         context = new HoughTrainingContext<PartialDepthFeatureFactory>(classCount,*pff,config.voteDistThr()*config.voteDistThr());
         if (config.serializeInfo()){
@@ -208,6 +213,8 @@ ITrainingContext<DepthFeature,VotesStats>  *createTrainingContext(Configuration 
     default:
         cache.log() << "Unknown feature factory type; nothing to return" << std::endl;
     }
+
+
 
     return context;
 }

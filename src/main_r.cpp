@@ -15,6 +15,7 @@
 #include "regression/votesstatst.h"
 #include "regression/depthdbreg.h"
 #include "regression/regtrainingcontext.h"
+#include "regression/votesaggregator.h"
 #include "stubstats.h"
 #include "string2number.hpp"
 #include "rfutils.h"
@@ -49,14 +50,14 @@ ITrainingContext<DepthFeature,Stats>  *createTrainingContext(Configuration &conf
         cache.log() << "feature factory: FeaturePool" << std::endl;
         std::ifstream in(config.featuresFile().c_str());
         FeaturePool *fp = new FeaturePool(in);
-        context =  new RegTrainingContext<Stats,FeaturePool>(classCount,*fp,config.voteDistThr()*config.voteDistThr());
+        context =  new RegTrainingContext<Stats,FeaturePool>(classCount,*fp,config.gainType(),config.voteDistThr()*config.voteDistThr());
         break;
     }
     case Configuration::FullFeaturesFactory:
     {
         cache.log() << "feature factory: FullDepthFeatureFactory" << std::endl;
         FullDepthFeatureFactory *fff = new FullDepthFeatureFactory(config.featureParameters());
-        context = new RegTrainingContext<Stats,FullDepthFeatureFactory>(classCount,*fff,config.voteDistThr()*config.voteDistThr());
+        context = new RegTrainingContext<Stats,FullDepthFeatureFactory>(classCount,*fff,config.gainType(),config.voteDistThr()*config.voteDistThr());
         if (config.serializeInfo()){
             ((RegTrainingContext<Stats,FullDepthFeatureFactory> *)context)->setFeatureAccomulator(accomulator);
         }
@@ -66,7 +67,7 @@ ITrainingContext<DepthFeature,Stats>  *createTrainingContext(Configuration &conf
     {
         cache.log() << "feature factory: PartialDepthFeatureFactory" << std::endl;
         PartialDepthFeatureFactory *pff = new PartialDepthFeatureFactory(config.featureParameters());
-        context = new RegTrainingContext<Stats,PartialDepthFeatureFactory>(classCount,*pff,config.voteDistThr()*config.voteDistThr());
+        context = new RegTrainingContext<Stats,PartialDepthFeatureFactory>(classCount,*pff,config.gainType(),config.voteDistThr()*config.voteDistThr());
         if (config.serializeInfo()){
             ((RegTrainingContext<Stats,PartialDepthFeatureFactory> *)context)->setFeatureAccomulator(accomulator);
         }
@@ -180,13 +181,56 @@ int main(int argc, char **argv)
             log << "forest deserialized" << std::endl;
         }
 
-        std::ostream &log = cache.log();
 
         std::vector<std::vector<int> > leafIndicesPerTree;
         forest->Apply(db,leafIndicesPerTree,&progress);
 
+        std::vector<VotesAggregator<VoteType,VoteDim> > aggLeafs;
+        VotesAggregator<VoteType,VoteDim> tmp(db.voteClassCount());
+        mean_shift::MeanShift mshift;
+        mshift.setRadius(config.meanShiftR());
+        mshift.setMaxIter(config.meanShiftMaxIter());
+        mshift.setMaxNeigboursCount(config.maxNN());
+
+        log << "mean shift radius: " << config.meanShiftR() << std::endl;
+        log << "mean shift max iter: " << config.meanShiftMaxIter() << std::endl;
+        log << "mean shift max neighbour count: " << config.meanShiftMaxIter() << std::endl;
+        log << "small vote weights threashold: " << config.smallWeightThr() << std::endl;
+
+        aggLeafs.assign(forest->GetTree(0).NodeCount(),tmp);
+
+        log << "starting votes aggregation" << std::endl;
+
+        for(int i=0; i<forest->GetTree(0).NodeCount();i++){
+            if(forest->GetTree(0).GetNode(i).IsLeaf()){
+               if(!config.discardHighVar() ||
+                   forest->GetTree(0).GetNode(i).TrainingDataStatistics.VoteVariance() < config.nodeVarThr()){
+                   aggLeafs[i].AggregateVotes(forest->GetTree(0).GetNode(i).TrainingDataStatistics,mshift);
+                   //remove 'noise' votes
+                   aggLeafs[i].FilterSmallWeights(config.smallWeightThr());
+               }else{
+                   log << "skipping node: " << i << std::endl;
+               }
+            }
+        }
+
+        std::cerr << "votes aggregation done" << std::endl;
+
+        std::ostream &leafs = cache.openBinStream("aggLeafs");
+        for(int i=0; i<aggLeafs.size(); i++){
+            if(forest->GetTree(0).GetNode(i).IsLeaf()){
+                //write leafs index
+                leafs.write((const char *)&i,sizeof(int));
+                aggLeafs[i].Serialize(leafs);
+                forest->GetTree(0).GetNode(i).TrainingDataStatistics.Serialize(leafs);
+            }
+        }
+
+        std::cerr << "votes serialization done" << std::endl;
+
         std::ostream &leafIds = cache.openBinStream("leafIds");
         serializeVector<int>(leafIds,leafIndicesPerTree[0]);
+
 
         log << "forest applied" << std::endl;
 
@@ -196,11 +240,18 @@ int main(int argc, char **argv)
         std::string tmpstr;
         cv::Point2i current;
 
+        std::vector<VotesAggregator<VoteType,VoteDim> > perImageVotes;
+
+        perImageVotes.assign(db.imageCount(),tmp);
+
+        log << "aggregating votes accross the images" << std::endl;
+
         for(int i=0; i<db.Count(); i++){
             db.getDataPoint(i,tmpstr,current);
             imgIds[i] = db.getImageIdx(i);
             x[i] = current.x;
             y[i] = current.y;
+            perImageVotes[imgIds[i]].AddVotes(aggLeafs[leafIndicesPerTree[0][i]]);
         }
 
         std::ostream &ids = cache.openBinStream("imgIds");
@@ -211,6 +262,17 @@ int main(int argc, char **argv)
 
         std::ostream &yvals = cache.openBinStream("yVals");
         serializeVector<int>(yvals,y);
+
+        log << "serializing aggregated votes" << std::endl;
+
+        std::ostream &aggVotesStream = cache.openBinStream("aggVotes");
+        GroundTruthDecorator<VoteType,VoteDim> deco;
+        for(int i=0; i<db.imageCount(); i++){
+            /*create the decoration*/
+            deco = GroundTruthDecorator<VoteType,VoteDim>(perImageVotes[i]);
+            deco.SetGT(db.getGT(i));
+            deco.Serialize(aggVotesStream);
+        }
 
         log << "indices saved" << std::endl;
 

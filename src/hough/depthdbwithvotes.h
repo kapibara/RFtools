@@ -34,8 +34,8 @@ public:
     typedef unsigned char vote_class_count;
     virtual bool getDataPointVote(DepthFileBasedImageDB::index_type i, std::vector<cv::Point2i> &vote) = 0;
     virtual vote_class_count voteClassCount() = 0;
-    virtual void setRelative(vote_class_count cl, int value) = 0;
-    virtual int getRelative(vote_class_count cl) const = 0;
+    virtual void setRelative(vote_class_count cl, bool value) = 0;
+    virtual bool isRelative(vote_class_count cl) const = 0;
 };
 
 class DepthDBWithVotesSubindex: public SubindexFileBasedImageDB, public DepthDBWithVotes
@@ -55,13 +55,13 @@ public:
         return dynamic_cast<DepthDBWithVotes &>(source_).voteClassCount();
     }
 
-    void setRelative(vote_class_count cl, int value){
+    void setRelative(vote_class_count cl, bool value){
         dynamic_cast<DepthDBWithVotes &>(source_).setRelative(cl,value);
     }
 
-    int getRelative(vote_class_count cl) const
+    bool isRelative(vote_class_count cl) const
     {
-        return dynamic_cast<DepthDBWithVotes &>(source_).getRelative(cl);
+        return dynamic_cast<DepthDBWithVotes &>(source_).isRelative(cl);
     }
 
 };
@@ -78,12 +78,12 @@ public:
 
     bool getDataPointVote(index_type i, std::vector<cv::Point2i> &vote);
 
-    void setRelative(vote_class_count cl, int value)
+    void setRelative(vote_class_count cl, bool value)
     {
         isRelative_[cl] = value;
     }
 
-    int getRelative(vote_class_count cl) const
+    bool isRelative(vote_class_count cl) const
     {
         return isRelative_[cl];
     }
@@ -102,7 +102,7 @@ private:
 
     vote_class_count voteClassCount_;
 
-    std::vector<int> isRelative_;
+    std::vector<bool> isRelative_;
     std::vector<std::vector<cv::Point2i> > votes_; //stores joint locations for each image
 };
 

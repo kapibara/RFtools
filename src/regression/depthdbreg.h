@@ -51,10 +51,10 @@ public:
         voteClassCount_ = 0;
 
         //set default calibration
-        fx_ = 591.04;
-        fy_ = 594.21;
-        cx_ = 242.74;
-        cy_ = 339.30;
+        fx_ = 575.81;
+        fy_ = 575.81;
+        cx_ = 320;
+        cy_ = 240;
     }
 
     bool loadDB(const std::string &filename, bool hasHeader)
@@ -68,6 +68,10 @@ public:
         }
 
         return result;
+    }
+
+    const std::vector<cv::Vec<ElemType,S> > & getGT(fileindex_type i) const{
+        return votes_[i];
     }
 
 
@@ -131,14 +135,18 @@ public:
 protected:
     bool postprocessFile(const cv::Mat &image, GeneralStringParser &parser)
     {
+
         /*put all pixels into the array*/
         DepthFileBasedImageDBImpl::postprocessFile(image,parser);
+
 
         PointsSParser<ElemType,S> &typedparser = dynamic_cast<PointsSParser<ElemType,S> &>(parser);
         std::vector<cv::Vec<ElemType,S> > joints;
 
+
         /*add joint locations*/
         typedparser.getJoints(joints);
+
         votes_.push_back(joints);
 
         if (voteClassCount_<joints.size())

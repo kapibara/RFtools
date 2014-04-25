@@ -6,6 +6,7 @@
 #include "depthfeature.h"
 #include "TrainingParameters.h"
 
+
 namespace MRF = MicrosoftResearch::Cambridge::Sherwood;
 
 class Configuration
@@ -28,6 +29,12 @@ public:
     float nodeVarThr() const{return varianceThr_;}
     int voteDistThr() const{return voteDistThr_;}
 
+    float meanShiftR() const{return r_;}
+    int meanShiftMaxIter() const{return maxIter_;}
+    float smallWeightThr() const{return weightThr_;}
+    int maxNN() const {return maxNN_;}
+
+    std::string gainType() const{return gainType_;}
     std::string cacheFolderName() const{return cacheFolderName_;}
     std::string databaseFile() const{return dbFile_;}
     std::string forestFile() const{return forestLocation_;}
@@ -53,12 +60,18 @@ private:
     std::string dbFile_;
     std::string featuresLocation_;
     std::string cacheFolderName_;
+    std::string gainType_;
     float subsamplerRate_;
     float varianceThr_;
 
     int candidatesCount_;
     int voteDistThr_;
     float testTrainSplit_;
+
+    float r_;
+    int maxIter_;
+    int maxNN_;
+    float weightThr_;
 
     DepthFeatureParameters  dfParams_;
     MRF::TrainingParameters forestParam_;

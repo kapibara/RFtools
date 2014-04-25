@@ -24,6 +24,7 @@ set(HOUGH_HEADERS ${H_FOLDER}/houghtrainingcontext.h /
 set(REG_HEADERS ${REG_FOLDER}/votesstatst.h /
                 ${REG_FOLDER}/depthdbreg.h /
                 ${REG_FOLDER}/regtrainingcontext.h /
+                ${REG_FOLDER}/votesaggregator.h
 )
 
 set(GENERAL_HEADERS /
@@ -63,6 +64,7 @@ set(HOUGH_SOURCE ${H_FOLDER}/houghtrainingcontext.cpp /
 set(REG_SOURCE ${REG_FOLDER}/votesstatst.cpp /
                ${REG_FOLDER}/depthdbreg.cpp /
                ${REG_FOLDER}/regtrainingcontext.cpp /
+               ${REG_FOLDER}/votesaggregator.cpp /
 )
 
 set(GENERAL_SOURCE  /
@@ -109,7 +111,7 @@ add_executable(${EXEREG} main_r.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_H
 
 target_link_libraries(${EXECCL} ${OpenCV_LIBS} ${Boost_LIBS})
 target_link_libraries(${EXECH} ${OpenCV_LIBS} ${Boost_LIBS})
-target_link_libraries(${EXEREG} ${OpenCV_LIBS} ${Boost_LIBS})
+target_link_libraries(${EXEREG} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
 target_link_libraries(${TESTS} ${OpenCV_LIBS} ${Boost_LIBS})
 target_link_libraries(${FEATUREGEN} ${OpenCV_LIBS} ${Boost_LIBS})
 

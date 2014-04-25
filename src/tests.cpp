@@ -8,9 +8,14 @@
 #include "regression/depthdbreg.h"
 #include "serialization.h"
 #include "rfutils.h"
+#include "featureaccomulator.h"
 
 #include <fstream>
 #include <memory>
+#include <queue>
+#include <cstdlib>
+
+#include <time.h>
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
 using namespace std;
@@ -254,6 +259,8 @@ void test3DPoints()
 
     v.resize(2);
 
+    std::cout << "size: " << db.Count() << std::endl;
+
     for(int i=0; i< db.Count(); i++){
         db.getDataPoint(i,m,p2D);
         p3D = db.to3D(p2D,m.at<unsigned short>(p2D));
@@ -270,9 +277,50 @@ void test3DPoints()
     out.close();
 }
 
+void priorityQueuetest()
+{
+    std::priority_queue<FeatureAccomulator::FeatureGainType> pq;
+    int num;
+
+    std::srand (time(NULL));
+
+    for(int i=10; i>-30; i--){
+        num = rand() % 80 - 50;
+        std::cout << "num: " << num << std::endl;
+        if (pq.size()<5){
+            pq.push(FeatureAccomulator::FeatureGainType(DepthFeature(),0,-num));
+        }else{
+            if(-num<pq.top().gain_){
+                pq.pop();
+                pq.push(FeatureAccomulator::FeatureGainType(DepthFeature(),0,-num));
+            }
+        }
+    }
+
+    int size = pq.size();
+    while(!pq.empty()){
+        std::cout << -pq.top().gain_ << std::endl;
+        pq.pop();
+    }
+    std::cout << pq.empty() << std::endl;
+}
+
 int main(int argc, char **argv)
 {
+//    priorityQueuetest();
 
+    cv::Vec<float,3> tocopy;
+    tocopy[0] = 1;
+    tocopy[1] = 2;
+    tocopy[2] = 3;
+    cv::Vec<float,3> copyto;
+
+    copyto = tocopy;
+
+    std::cerr << tocopy << std::endl;
+    std::cerr << copyto << std::endl;
+
+//    test3DPoints();
 
 /*    DepthDBClassImage db;
     db.loadDB(argv[1]);
@@ -288,8 +336,6 @@ int main(int argc, char **argv)
 
 
     testFileDBIndexing(*test);*/
-    test3DPoints();
-
 /*    //same image
     stats.Aggregate(db,0);
     stats.Aggregate(db,1);

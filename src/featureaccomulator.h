@@ -30,9 +30,6 @@ public:
 
     bool addCurrentParameters(const DepthFeature &f, float threashold, double gain);
 
-
-private:
-
     struct FeatureGainType{
         DepthFeature f_;
         float threashold_;
@@ -51,6 +48,8 @@ private:
         }
     };
 
+private:
+
     void serializePQ(){
 
         out_.write((const char *)&nodeIndex_,sizeof(nodeIndex_));
@@ -62,14 +61,13 @@ private:
         }
 
         {
-            int size = gainStats_.size();
-            out_.write((const char *)&(size),sizeof(size));
-            for(int i=0; i< size; i++){
+            out_.write((const char *)&(last_),sizeof(last_));
+            for(int i=0; i< last_; i++){
                 out_.write((const char *)&(gainStats_[i]),sizeof(double));
             }
-            size = thrStats_.size();
-            out_.write((const char *)&(size),sizeof(size));
-            for(int i=0; i< size; i++){
+
+            out_.write((const char *)&(last_),sizeof(last_));
+            for(int i=0; i< last_; i++){
                 out_.write((const char *)&(thrStats_[i]),sizeof(float));
             }
             last_ = 0;

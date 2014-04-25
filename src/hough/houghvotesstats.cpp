@@ -167,6 +167,7 @@ bool HoughVotesStats::Serialize(const std::string &filename)
     }
 
     out.at<cv::Vec3b>(gt_ + center_) = cv::Vec3b(0,0,255);
+
     cv::imwrite(filename,out);
     return true;
 }

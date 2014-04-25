@@ -42,6 +42,19 @@ Configuration::Configuration(std::istream &input)
     varianceThr_ = properties.get<float>("nodevarthr",-1);
     voteDistThr_ = properties.get<float>("votethr",100);
 
+    boost::optional<bpt::ptree &> meanshiftProps = properties.get_child_optional("meanshift");
+    if (meanshiftProps){
+        r_ = meanshiftProps.get().get<float>("bandwidth",100);
+        maxIter_ = meanshiftProps.get().get<float>("maxiter",10);
+        maxNN_ = meanshiftProps.get().get<float>("maxnn",5000);
+        weightThr_ = meanshiftProps.get().get<float>("smallweight",0);
+    }else{
+        r_ = 100;
+        maxIter_ = 10;
+        maxNN_ = 5000;
+        weightThr_ = 0;
+    }
+
     if (testOnly_){
         forestLocation_ = properties.get<std::string>("forestfile");
     }else{
@@ -52,6 +65,8 @@ Configuration::Configuration(std::istream &input)
         forestParam_.MaxDecisionLevels = forestProperties.get<int>("depth")-1;
         forestParam_.NumberOfCandidateFeatures = forestProperties.get<int>("featurespernode");
         forestParam_.NumberOfCandidateThresholdsPerFeature = forestProperties.get<int>("thrperfeature");
+        gainType_ = forestProperties.get<std::string>("gaintype","variance");
+
 
         bpt::ptree featureproperties = properties.get_child("featureproperties");
         dfParams_.uvlimit_ = featureproperties.get<int>("uvlimit");

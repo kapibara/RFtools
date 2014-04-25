@@ -74,7 +74,7 @@ void DepthFileBasedImageDBImpl::readFiles(const std::string &file,  GeneralStrin
 
             input >> tmp;
             processHeader(tmp);
-            std::cout << "header: " << filename << std::endl;
+            std::cout << "header: " << tmp << std::endl;
         }
 
         while(!input.eof()){

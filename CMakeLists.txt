@@ -12,9 +12,13 @@ if(WIN32)
     set(DEV_BASE "C:/Data/Development/CPP/")
 else()
     set(DEV_BASE "/home/kuznetso/Projects/CPP/")
+    set(FLANN_ROOT "/home/kuznetso/bin/flann")
 endif()
 
 set(Forest_DIR "${DEV_BASE}MSRFlib/lib/")
+set(MEANSHIFT_DIR "${DEV_BASE}MeanShift")
+
+set(MEANSHIFT_LIBS meanshift)
 
 if(WIN32)
 #   set(OpenCV_DIR "C:/openCV/custom_build")
@@ -31,9 +35,14 @@ include_directories(${HOME}/src)
 include_directories(${Forest_DIR})
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${MEANSHIFT_DIR}/src)
+if(UNIX)
+    include_directories(${FLANN_ROOT}/include)
+endif()
 
 link_directories(${OpenCV_LIB_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
+link_directories(${MEANSHIFT_DIR}/lib)
 
 #message("Boost_LIBRARY_DIRS = ${Boost_LIBRARY_DIRS}")
 
