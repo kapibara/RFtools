@@ -41,6 +41,24 @@ public:
     virtual vote_class_count voteClassCount() = 0;
 };
 
+template <typename ElemType, unsigned int S>
+class SubindexDBWithVotesS: public SubindexFileBasedImageDB, public DepthDBWithVotesS<ElemType,S>
+{
+public:
+    SubindexDBWithVotesS(DepthFileBasedImageDB &source, const std::vector<index_type> &subindex){
+        SubindexFileBasedImageDB(source,subindex);
+    }
+
+    bool getDataPointVote(DepthFileBasedImageDB::index_type i, std::vector<cv::Vec<ElemType,S> > &vote){
+        return dynamic_cast<DepthDBWithVotesS<ElemType,S> &>(source_).getDataPointVote(subindex_[i], vote);
+    }
+
+    typename DepthDBWithVotesS<ElemType,S>::vote_class_count voteClassCount(){
+        return dynamic_cast<DepthDBWithVotesS<ElemType,S> &>(source_).voteClassCount();
+    }
+
+};
+
 template <typename ElemType,unsigned int S>
 class DepthDBWithVotesSImpl: public DepthFileBasedImageDBImpl, public DepthDBWithVotesS<ElemType,S>
 {

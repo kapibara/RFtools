@@ -6,6 +6,7 @@
 
 #include "regression/votesstatst.h"
 #include "regression/depthdbreg.h"
+#include "regression/votesaggregator.h"
 #include "serialization.h"
 #include "rfutils.h"
 #include "featureaccomulator.h"
@@ -305,11 +306,60 @@ void priorityQueuetest()
     std::cout << pq.empty() << std::endl;
 }
 
+void testVoteVarianceT()
+{
+    VotesStatsElemT<float,3> vv(10000*10000);
+    cv::Vec<float,3> container;
+
+
+
+    for(int i=0; i< 100000000; i++){
+        container[0] = i/((double)325600);
+        container[1] = i/((double)100000);
+        container[2] = i/((double)111100);
+        vv.Aggregate(container);
+    }
+
+    std::cerr << "variance: " << vv.VoteVariance() << std::endl;
+
+}
+
+void testAggregatorsDeserialization()
+{
+    std::ifstream in("/home/kuznetso/Projects/CPP/DepthRF/test/aggLeafs",std::ios_base::binary);
+    std::ofstream out("/home/kuznetso/Projects/CPP/DepthRF/test/aggLeafsDes",std::ios_base::binary);
+    VotesAggregator<float,3> tmp;
+    std::vector<VotesAggregator<float,3> > result;
+
+    while(!in.eof()){
+        tmp.Deserialize(in);
+        if(!in.eof()){
+            tmp.Serialize(out);
+            result.push_back(tmp);
+        }
+    }
+
+    std::cerr << "result: " << result.size() << std::endl;
+}
+
+void testForestDeserialization()
+{
+    std::ifstream in("/home/kuznetso/Projects/CPP/DepthRF/test/forest",std::ios_base::binary);
+
+    std::auto_ptr<Forest<DepthFeature,  VotesStatsT<float,3> > > forest = Forest<DepthFeature, VotesStatsT<float,3> >::Deserialize(in);
+
+    std::ofstream out("/home/kuznetso/Projects/CPP/DepthRF/test/forestDes",std::ios_base::binary);
+
+    forest->Serialize(out);
+}
+
 int main(int argc, char **argv)
 {
+
+    testForestDeserialization();
 //    priorityQueuetest();
 
-    cv::Vec<float,3> tocopy;
+/*    cv::Vec<float,3> tocopy;
     tocopy[0] = 1;
     tocopy[1] = 2;
     tocopy[2] = 3;
@@ -318,7 +368,7 @@ int main(int argc, char **argv)
     copyto = tocopy;
 
     std::cerr << tocopy << std::endl;
-    std::cerr << copyto << std::endl;
+    std::cerr << copyto << std::endl;*/
 
 //    test3DPoints();
 

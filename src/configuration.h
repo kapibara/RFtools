@@ -39,6 +39,7 @@ public:
     std::string databaseFile() const{return dbFile_;}
     std::string forestFile() const{return forestLocation_;}
     std::string featuresFile() const{return featuresLocation_;}
+    std::string leafsFile() const{return leafsFile_;}
 
     MRF::TrainingParameters forestParameters() const{return forestParam_;}
     DepthFeatureParameters featureParameters() const{return dfParams_;}
@@ -61,6 +62,7 @@ private:
     std::string featuresLocation_;
     std::string cacheFolderName_;
     std::string gainType_;
+    std::string leafsFile_;
     float subsamplerRate_;
     float varianceThr_;
 

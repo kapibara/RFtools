@@ -245,13 +245,14 @@ public:
                 variance_ = 0;
                 for(int i=0; i<S; i++){
                     variance_ += m2_(i,i)/votesCount_ - (m_[i]/votesCount_)*(m_[i]/votesCount_);
+   //                 variance_ += m2_(i,i) - (m_[i]/votesCount_)*m_[i];
                 }
-                return variance_;
+                return (double)variance_;
             }else{
                 return 0;
             }
         }else {
-            return variance_;
+            return (double)variance_;
         }
 
     }
@@ -286,7 +287,7 @@ public:
     {
         int size = S;
         stream.write((const char *)(&votesCount_),sizeof(votesCount_));
-        //write votes size
+        //write votes size (dimensions)
         stream.write((const char *)(&size),sizeof(size));
 
         size = votes_.size();
@@ -304,7 +305,7 @@ public:
     {
         int size;
         stream.read((char *)(&votesCount_),sizeof(votesCount_));
-        //read votes size
+        //read votes size (dimensions)
         stream.read((char *)(&size),sizeof(size));
         cv::Vec<ElemType,S> tmp;
 
@@ -325,7 +326,6 @@ public:
         variance_ = -1; //invalidate variance
         enthropy_ = -1;
         aggregationValid_ = false; //because some votes will not be added
-        votesCount_ += stats.votesCount_;
 
 #ifdef ENABLE_OVERFLOW_CHECKS
             if(votesCount_> (std::numeric_limits<element_count>::max() - stats.votesCount_)){

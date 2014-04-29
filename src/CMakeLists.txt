@@ -3,6 +3,8 @@ set(EXECH DepthRFHOUGH)
 set(EXEREG DepthRFReg)
 set(FEATUREGEN FeatureGen)
 set(TESTS tests)
+set(EXECCOMB DepthRFComb)
+set(EXECSEQ DepthRFSeq)
 
 set(CL_FOLDER classification)
 set(H_FOLDER hough)
@@ -107,6 +109,8 @@ add_executable(${EXECH} main_h.cpp ${HOUGH_SOURCE} ${HOUGH_HEADERS} ${GENERAL_HE
 add_executable(${TESTS} tests.cpp ${CL_SOURCE} ${CL_HEADERS} ${HOUGH_SOURCE} ${HOUGH_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
 add_executable(${FEATUREGEN} feature_gen.cpp ${GENERAL_SOURCE})
 add_executable(${EXEREG} main_r.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE})
+add_executable(${EXECCOMB} main_comb.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE})
+add_executable(${EXECSEQ} main_seq.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE})
 
 
 target_link_libraries(${EXECCL} ${OpenCV_LIBS} ${Boost_LIBS})
@@ -114,10 +118,14 @@ target_link_libraries(${EXECH} ${OpenCV_LIBS} ${Boost_LIBS})
 target_link_libraries(${EXEREG} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
 target_link_libraries(${TESTS} ${OpenCV_LIBS} ${Boost_LIBS})
 target_link_libraries(${FEATUREGEN} ${OpenCV_LIBS} ${Boost_LIBS})
+target_link_libraries(${EXECCOMB} ${OpenCV_LIBS} ${Boost_LIBS})
+target_link_libraries(${EXECSEQ} ${OpenCV_LIBS} ${Boost_LIBS})
 
 #install(TARGETS ${EXECCL} DESTINATION .)
 install(TARGETS ${EXECH} DESTINATION .)
 install(TARGETS ${TESTS} DESTINATION .)
 install(TARGETS ${FEATUREGEN} DESTINATION .)
 install(TARGETS ${EXEREG} DESTINATION .)
+install(TARGETS ${EXECCOMB} DESTINATION .)
+install(TARGETS ${EXECSEQ} DESTINATION .)
 

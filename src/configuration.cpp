@@ -30,14 +30,14 @@ Configuration::Configuration(std::istream &input)
     cacheFolderName_ = trim_with_return(subtree.get<std::string>("folder"));
 
     bpt::ptree properties =  subtree.get_child("properties");
-    dbFile_ = trim_with_return(properties.get<std::string>("dbfile"));
-    testOnly_ = properties.get<int>("testonly")!=0;
+    dbFile_ = trim_with_return(properties.get<std::string>("dbfile",""));
+    testOnly_ = properties.get<int>("testonly",0)!=0;
 
     testOnTrain_ = (properties.get<int>("testontrain",0)!=0) & ~testOnly_;
     testOnTest_ = (properties.get<int>("testontest",1)!=0);
 
     dbHasHeader_ = properties.get<int>("dbhasheader",0)!=0;
-    testTrainSplit_ = properties.get<float>("testtrainsplit");
+    testTrainSplit_ = properties.get<float>("testtrainsplit",1.0);
     subsamplerRate_ = properties.get<float>("subsamplerrate",-1);
     varianceThr_ = properties.get<float>("nodevarthr",-1);
     voteDistThr_ = properties.get<float>("votethr",100);
@@ -57,6 +57,7 @@ Configuration::Configuration(std::istream &input)
 
     if (testOnly_){
         forestLocation_ = properties.get<std::string>("forestfile");
+        leafsFile_ = properties.get<std::string>("leafsfile","");
     }else{
         serializeInfo_ = properties.get<int>("serializeinfo")>0;
 

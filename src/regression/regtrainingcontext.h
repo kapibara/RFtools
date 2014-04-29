@@ -82,6 +82,7 @@ public:
         }
 
         return ((pvv - w1*lvv) - w2*rvv);
+//        return ((pvv - lvv) - rvv);
     }
 
     bool ShouldTerminate(const Stats& parent, const Stats& leftChild, const Stats& rightChild, double gain)

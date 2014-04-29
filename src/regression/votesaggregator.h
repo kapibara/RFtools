@@ -60,6 +60,13 @@ public:
         elems_.resize(elemCount);
     }
 
+    void Prediction(std::vector<cv::Vec<ElemType,S> > &prediction, std::vector<double> &weight,mean_shift::MeanShift &mshift)
+    {
+        for(int i=0; i< elems_.size(); i++){
+            weight[i]=elems_[i].Prediction(prediction[i],mshift);
+        }
+    }
+
     /*run mean shift to create a compressed votes storage*/
     void AggregateVotes(const VotesStatsT<ElemType,S> &stats, mean_shift::MeanShift &mshift)
     {
@@ -97,6 +104,11 @@ public:
         }
     }
 
+    int Count(int elem)
+    {
+        return elems_[elem].Count();
+    }
+
     void Serialize(std::ostream &out) const
     {
         int elemCount = elems_.size();
@@ -105,6 +117,17 @@ public:
         for(int i=0; i< elems_.size(); i++){
             elems_[i].Serialize(out);
         }
+    }
+
+    void Deserialize(std::istream &in)
+    {
+        int elemCount;
+        in.read((char *)&elemCount,sizeof(elemCount));
+        elems_.resize(elemCount);
+        for(int i=0; i< elems_.size(); i++){
+            elems_[i].Deserialize(in);
+        }
+
     }
 
 private:
@@ -117,6 +140,56 @@ class VotesAggregatorElem
 public:
     VotesAggregatorElem()
     {
+        prediction_.resize(S);
+    }
+
+
+    double Prediction(cv::Vec<ElemType,S> &prediction, mean_shift::MeanShift &mshift)
+    {
+        //conver points and weights to a matrix
+        mean_shift::ElemType *weights_data = new mean_shift::ElemType[weights_.size()];
+        mean_shift::ElemType *votes_data = new mean_shift::ElemType[votes_.size()*S];
+
+        flann::Matrix<mean_shift::ElemType> weights(weights_data,weights_.size(),1);
+        flann::Matrix<mean_shift::ElemType> votes(votes_data,votes_.size(),S);
+        mean_shift::MatrixRow wrapper(votes);
+
+        std::copy(weights_.begin(),weights_.end(),weights_data);
+
+        for(int i=0; i<weights_.size();i++){
+            convert(votes_[i],wrapper.setRow(i));
+        }
+
+        mshift.setPoints(votes,weights);
+
+        try{
+            mshift.run();
+//            std::cerr << "clusters detected: " <<mshift.getClusterNumber() << std::endl;
+        }catch(flann::FLANNException e){
+            std::cerr << "flann exception: " << e.what() << std::endl;
+        }
+        catch(std::exception e){
+            std::cerr << "std exception: " << e.what() << std::endl;
+        }
+
+
+        flann::Matrix<mean_shift::IndexType> sizes =  mshift.getClusterSizes();
+
+
+        //find the biggest cluster
+        mean_shift::IndexType *maxelem = std::max_element(sizes.ptr(),sizes.ptr()+sizes.cols);
+        int idx = maxelem - sizes.ptr();
+
+
+        mshift.getClusterCenter(idx,prediction_);
+
+        std::copy(prediction_.begin(),prediction_.end(),&(prediction[0]));
+
+        delete [] sizes.ptr();
+        delete [] weights_data;
+        delete [] votes_data;
+
+        return ((double)(*maxelem))/votes_.size();
 
     }
 
@@ -138,7 +211,7 @@ public:
         }
     }
 
-    void Count()
+    int Count()
     {
         return weights_.size();
     }
@@ -156,7 +229,7 @@ public:
         //fill the matrix
         //std::cerr << "copying votes: " << votesCount << std::endl;
         for(typename VotesStatsElemT<ElemType,S>::const_iterator i = stats.begin(); i!= stats.end(); i++){
-            convert((*i),wrapper.setRow(row)); //todo
+            convert((*i),wrapper.setRow(row));
             row++;
 
         }
@@ -223,6 +296,24 @@ public:
         }
     }
 
+    void Deserialize(std::istream &in)
+    {
+        int elemCount;
+        in.read((char *)&elemCount,sizeof(elemCount));
+        weights_.resize(elemCount);
+        votes_.resize(elemCount);
+        int dims;
+        in.read((char *)&dims,sizeof(dims));
+        for(int i=0; i<votes_.size(); i++){
+            for(int j=0; j<S; j++){
+                in.read((char *)&(votes_[i][j]),sizeof(ElemType));
+            }
+        }
+        for(int i=0; i<weights_.size(); i++){
+            in.read((char *)&(weights_[i]),sizeof(double));
+        }
+    }
+
     void FilterSmallWeights(float weightThr)
     {
 
@@ -242,6 +333,7 @@ public:
     }
 
 private:
+
     void convert(const cv::Vec<ElemType,S> &from, mean_shift::MatrixRow &to)
     {
         //assume the sizes are correct
@@ -252,6 +344,7 @@ private:
 
     std::vector<double> weights_;
     std::vector<cv::Vec<ElemType,S> > votes_;
+    std::vector<mean_shift::ElemType> prediction_;
 
 };
 
