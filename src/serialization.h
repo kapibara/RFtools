@@ -5,6 +5,8 @@
 #include <fstream>
 #include <string>
 
+#include <opencv2/opencv.hpp>
+
 template<class T>
 void serializeVector(std::ostream &stream, const std::vector<T> &in, int from = -1, int to = -1)
 {
@@ -26,6 +28,20 @@ void serializeVector(const std::string &filename, const std::vector<T> &in, int 
     std::ofstream out(filename.c_str(),std::ios_base::binary);
     serializeVector<T>(out,in, from , to);
     out.close();
+}
+
+template<class ElemType, int S>
+void serializeVoteVector(const std::vector<cv::Vec<ElemType,S> > &vec, std::ostream &out)
+{
+    int size = vec.size();
+    out.write((const char *)&size,sizeof(size));
+    size = S;
+    out.write((const char *)&size,sizeof(size));
+    for(int i=0; i<vec.size(); i++){
+        for(int j=0; j<S; j++){
+            out.write((const char *)&(vec[i][j]),sizeof(ElemType));
+        }
+    }
 }
 
 

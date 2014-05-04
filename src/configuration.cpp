@@ -1,8 +1,11 @@
 #include "configuration.h"
 
+#include "split.h"
+
 #include <boost/property_tree/xml_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 
 /*copying too muc
  * but it is not performace - crilical*/
@@ -13,7 +16,6 @@ std::string trim_with_return(std::string in)
 }
 
 
-namespace bpt = boost::property_tree;
 
 Configuration::Configuration()
 {
@@ -40,6 +42,7 @@ Configuration::Configuration(std::istream &input)
     testTrainSplit_ = properties.get<float>("testtrainsplit",1.0);
     subsamplerRate_ = properties.get<float>("subsamplerrate",-1);
     varianceThr_ = properties.get<float>("nodevarthr",-1);
+    sizeThr_ = properties.get<int>("nodesizethr",-1);
     voteDistThr_ = properties.get<float>("votethr",100);
 
     boost::optional<bpt::ptree &> meanshiftProps = properties.get_child_optional("meanshift");
@@ -56,8 +59,7 @@ Configuration::Configuration(std::istream &input)
     }
 
     if (testOnly_){
-        forestLocation_ = properties.get<std::string>("forestfile");
-        leafsFile_ = properties.get<std::string>("leafsfile","");
+        readForestsList(properties);
     }else{
         serializeInfo_ = properties.get<int>("serializeinfo")>0;
 
@@ -91,4 +93,31 @@ Configuration::Factory Configuration::parseFactoryName(const std::string &factor
         return Configuration::FeaturePool;
 
     return Configuration::Unknown;
+}
+
+void Configuration::readForestsList(bpt::ptree &props)
+{
+    BOOST_FOREACH(bpt::ptree::value_type const&val, props.get_child("forests"))
+    {
+        bpt::ptree forest = val.second;
+        std::string ff = forest.get<std::string>("forestfile");
+        std::string lf = forest.get<std::string>("leafsfile","");
+        ForestParam fp = ForestParam(ff,lf);
+
+        readFloatVector(forest.get<std::string>("bounds",""),fp.bounds_);
+        readFloatVector(forest.get<std::string>("mean",""),fp.mean_);
+        readFloatVector(forest.get<std::string>("std",""),fp.std_);
+
+        forests_.push_back(fp);
+    }
+}
+
+void Configuration::readFloatVector(const std::string &in, std::vector<float> &out)
+{
+    std::vector<std::string> nums;
+    split(in,",",nums);
+
+    for(int i=0; i< nums.size(); i++){
+        out.push_back(boost::lexical_cast<float>(nums[i]));
+    }
 }

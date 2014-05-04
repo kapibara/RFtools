@@ -42,6 +42,11 @@ public:
     typedef unsigned int element_count;
     typedef typename elem_vector::const_iterator const_iterator;
 
+    VotesStatsT()
+    {
+        pointCount_ = 0;
+    }
+
     VotesStatsT(unsigned char voteElemCount = 0,unsigned int thr2 = 300*300)
     {
         voteElemCount_ = voteElemCount;

@@ -16,6 +16,7 @@
 #include "regression/depthdbreg.h"
 #include "regression/regtrainingcontext.h"
 #include "regression/votesaggregator.h"
+#include "regression/aggregatedleafs.h"
 #include "stubstats.h"
 #include "string2number.hpp"
 #include "rfutils.h"
@@ -30,19 +31,6 @@
 typedef float VoteType;
 
 typedef VotesStatsT<VoteType,VoteDim> Stats;
-
-void serializeVoteVector(const std::vector<cv::Vec<VoteType,VoteDim> > &vec, std::ostream &out)
-{
-    int size = vec.size();
-    out.write((const char *)&size,sizeof(size));
-    size = VoteDim;
-    out.write((const char *)&size,sizeof(size));
-    for(int i=0; i<vec.size(); i++){
-        for(int j=0; j<VoteDim; j++){
-            out.write((const char *)&(vec[i][j]),sizeof(VoteType));
-        }
-    }
-}
 
 void computeError(const std::vector<cv::Vec<VoteType,VoteDim> > &prediction,
                   const std::vector<cv::Vec<VoteType,VoteDim> > &gt,
@@ -235,26 +223,28 @@ int main(int argc, char **argv)
 
             log << "forest applied" << std::endl;
 
-            std::vector<VotesAggregator<VoteType,VoteDim> > aggLeafs;
-            VotesAggregator<VoteType,VoteDim> tmp(db.voteClassCount());
-            aggLeafs.assign(forest->GetTree(0).NodeCount(),tmp);
+            AggregatedLeafs<DepthFeature,Stats,VoteType,VoteDim> aggLeafs;
+
+            mean_shift::MeanShift mshift;
+            mshift.setRadius(config.meanShiftR());
+            mshift.setMaxIter(config.meanShiftMaxIter());
+            mshift.setMaxNeigboursCount(config.maxNN());
+
+            log << "mean shift radius: " << config.meanShiftR() << std::endl;
+            log << "mean shift max iter: " << config.meanShiftMaxIter() << std::endl;
+            log << "mean shift max neighbour count: " << config.meanShiftMaxIter() << std::endl;
+            log << "small vote weights threashold: " << config.smallWeightThr() << std::endl;
 
             log << "aggregating votes for tree " << 0 << std::endl;
 
-            meanShiftVotesAggregation(config,cache,forest->GetTree(0),aggLeafs);
+            aggLeafs.SetVarThreashold(config.nodeVarThr());
+            aggLeafs.SetNodeSizeThreashold(config.nodeSizeThr());
+            aggLeafs.SetSmallWeightsThreashold(config.smallWeightThr());
+            aggLeafs.Build(*forest,mshift,db.voteClassCount());
 
             std::ostream &leafs = cache.openBinStream("aggLeafs");
 
-            log << "aggLeafs.size(): " << aggLeafs.size() << std::endl;
-
-            for(int i=0; i<aggLeafs.size(); i++){
-                if(forest->GetTree(0).GetNode(i).IsLeaf()){
-                //write leafs index
-                    leafs.write((const char *)&i,sizeof(int));
-                    aggLeafs[i].Serialize(leafs);
-                    forest->GetTree(0).GetNode(i).TrainingDataStatistics.Serialize(leafs);
-                }
-            }
+            aggLeafs.Serialize(leafs,*forest);
 
             std::ostream &leafIds = cache.openBinStream("leafIds");
             serializeVector<int>(leafIds,leafIndicesPerTree[0]);
@@ -267,16 +257,20 @@ int main(int argc, char **argv)
 
             std::vector<VotesAggregator<VoteType,VoteDim> > perImageVotes;
 
+            VotesAggregator<VoteType,VoteDim> tmp(db.voteClassCount());
             perImageVotes.assign(db.imageCount(),tmp);
 
             log << "aggregating votes accross the images" << std::endl;
+
 
             for(int i=0; i<db.Count(); i++){
                 db.getDataPoint(i,tmpstr,current);
                 imgIds[i] = db.getImageIdx(i);
                 x[i] = current.x;
                 y[i] = current.y;
-                perImageVotes[imgIds[i]].AddVotes(aggLeafs[leafIndicesPerTree[0][i]]);
+                for(int t=0; t<forest->TreeCount(); t++){
+                    perImageVotes[imgIds[i]].AddVotes(aggLeafs.get(t,leafIndicesPerTree[0][i]));
+                }
             }
 
             std::ostream &ids = cache.openBinStream("imgIds");
@@ -298,20 +292,24 @@ int main(int argc, char **argv)
             weights.resize(db.voteClassCount());
             mean_shift::MeanShift finalshift;
 
-            finalshift.setRadius(2*config.meanShiftR());
-            finalshift.setMaxIter(2*config.meanShiftMaxIter());
+            finalshift.setRadius(config.meanShiftR());
+            finalshift.setMaxIter(config.meanShiftMaxIter());
             finalshift.setMaxNeigboursCount(config.maxNN());
 
             std::ostream &aggVotesStream = cache.openBinStream("aggVotes");
             std::ostream &errStream = cache.openBinStream("errors");
+            std::ostream &preStream = cache.openBinStream("predictions");
+            std::ostream &gtStream = cache.openBinStream("gt");
 
             GroundTruthDecorator<VoteType,VoteDim> deco;
             for(int i=0; i<db.imageCount(); i++){
                 //get prediction
-
                 perImageVotes[i].Prediction(prediction,weights,finalshift);
                 computeError(prediction,db.getGT(i),error);
-                serializeVoteVector(error, errStream);
+                //serialize
+                serializeVoteVector<VoteType,VoteDim>(error, errStream);
+                serializeVoteVector<VoteType,VoteDim>(prediction, preStream);
+                serializeVoteVector<VoteType,VoteDim>(db.getGT(i), gtStream);
                 //create the decoration
                 deco = GroundTruthDecorator<VoteType,VoteDim>(perImageVotes[i]);
                 deco.SetGT(db.getGT(i));

@@ -52,12 +52,13 @@ class VotesAggregator
 public:
     VotesAggregator()
     {
-
+        isEmpty_ = true;
     }
 
     VotesAggregator(int elemCount)
     {
         elems_.resize(elemCount);
+        isEmpty_ = true;
     }
 
     void Prediction(std::vector<cv::Vec<ElemType,S> > &prediction, std::vector<double> &weight,mean_shift::MeanShift &mshift)
@@ -70,6 +71,7 @@ public:
     /*run mean shift to create a compressed votes storage*/
     void AggregateVotes(const VotesStatsT<ElemType,S> &stats, mean_shift::MeanShift &mshift)
     {
+        isEmpty_ = false;
         elems_.resize(stats.ElemCount());
         int ind = 0;
 
@@ -92,6 +94,7 @@ public:
 
     void AddVotes(const VotesAggregator<ElemType,S> &agg)
     {
+        isEmpty_ = false;
         for(int i=0; i< elems_.size(); i++){
             elems_[i].AddVotes(agg.elems_[i]);
         }
@@ -99,6 +102,7 @@ public:
 
     void AddVotes(const VotesAggregator<ElemType,S> &agg, const cv::Vec<ElemType,S> &coord)
     {
+        isEmpty_ = false;
         for(int i=0; i< elems_.size(); i++){
             elems_[i].AddVotes(agg.elems_[i],coord);
         }
@@ -107,6 +111,11 @@ public:
     int Count(int elem)
     {
         return elems_[elem].Count();
+    }
+
+    bool IsEmpty()
+    {
+        return isEmpty_;
     }
 
     void Serialize(std::ostream &out) const
@@ -132,6 +141,7 @@ public:
 
 private:
     std::vector<VotesAggregatorElem<ElemType,S> > elems_;
+    bool isEmpty_;
 };
 
 template<class ElemType, int S>
@@ -175,11 +185,10 @@ public:
 
         flann::Matrix<mean_shift::IndexType> sizes =  mshift.getClusterSizes();
 
-
         //find the biggest cluster
         mean_shift::IndexType *maxelem = std::max_element(sizes.ptr(),sizes.ptr()+sizes.cols);
         int idx = maxelem - sizes.ptr();
-
+        double maxweight = ((double)(*maxelem))/votes_.size();
 
         mshift.getClusterCenter(idx,prediction_);
 
@@ -189,13 +198,22 @@ public:
         delete [] weights_data;
         delete [] votes_data;
 
-        return ((double)(*maxelem))/votes_.size();
+        return maxweight;
 
     }
 
     void AddVotes(const VotesAggregatorElem<ElemType,S> &agg)
     {
         weights_.insert(weights_.end(),agg.weights_.begin(),agg.weights_.end());
+        votes_.insert(votes_.end(),agg.votes_.begin(),agg.votes_.end());
+    }
+
+    void AddVotes(const VotesAggregatorElem<ElemType,S> &agg, double w)
+    {
+        weights_.reserve(agg.weights_.size());
+        for(int i=0; i<agg.weights_.size();i++) {
+            weights_.push_back(agg.weights_[i]*w);
+        }
         votes_.insert(votes_.end(),agg.votes_.begin(),agg.votes_.end());
     }
 
@@ -345,6 +363,8 @@ private:
     std::vector<double> weights_;
     std::vector<cv::Vec<ElemType,S> > votes_;
     std::vector<mean_shift::ElemType> prediction_;
+
+
 
 };
 

@@ -76,6 +76,7 @@ private:
 };
 
 
+friend
 
 
 /*============Depth Features==============*/
@@ -83,6 +84,16 @@ class DepthFeature
 {
 
 public:
+
+    friend DepthFeature linearCombination(const DepthFeature &f1, const DepthFeature &f2, float w1, float w2)
+    {
+        DepthFeature result;
+
+        result.u_ = f1.u_*w1 + f2.u_*w2;
+        result.v_ = f1.v_*w1 + f2.v_*w2;
+
+        return result;
+    }
 
     DepthFeature(cv::Point2i u, cv::Point2i v, unsigned short zeroplane):u_(u),v_(v),zeroplane_(zeroplane)
     {
@@ -109,7 +120,6 @@ public:
     bool Deserialize(std::istream &stream);
 
     bool SerializeChar(std::ostream &stream) const;
-
 
 private:
 

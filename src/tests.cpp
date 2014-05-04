@@ -7,6 +7,7 @@
 #include "regression/votesstatst.h"
 #include "regression/depthdbreg.h"
 #include "regression/votesaggregator.h"
+#include "regression/aggregatedleafs.h"
 #include "serialization.h"
 #include "rfutils.h"
 #include "featureaccomulator.h"
@@ -308,7 +309,7 @@ void priorityQueuetest()
 
 void testVoteVarianceT()
 {
-    VotesStatsElemT<float,3> vv(10000*10000);
+/*    VotesStatsElemT<float,3> vv(10000*10000);
     cv::Vec<float,3> container;
 
 
@@ -320,7 +321,9 @@ void testVoteVarianceT()
         vv.Aggregate(container);
     }
 
-    std::cerr << "variance: " << vv.VoteVariance() << std::endl;
+    std::cerr << "variance: " << vv.VoteVariance() << std::endl;*/
+
+    VotesStatsElemT<float,3> vv(10000*10000);
 
 }
 
@@ -353,10 +356,39 @@ void testForestDeserialization()
     forest->Serialize(out);
 }
 
+void testAggregatedLeafs()
+{
+    AggregatedLeafs<DepthFeature,  VotesStatsT<float,3>, float, 3> aleafs;
+
+    std::ifstream in("/home/kuznetso/tmp/GroupTestD10w/Train/forestrange4/forest",std::ios_base::binary);
+
+    std::auto_ptr<Forest<DepthFeature,  VotesStatsT<float,3> > > forest = Forest<DepthFeature, VotesStatsT<float,3> >::Deserialize(in);
+
+    in.close();
+
+    aleafs.SetSmallWeightsThreashold(0.1);
+    aleafs.SetVarThreashold(1.5e3);
+
+    mean_shift::MeanShift mshift;
+    mshift.setMaxIter(30);
+    mshift.setRadius(20);
+    mshift.setMaxNeigboursCount(30000);
+
+    aleafs.Build(*forest,mshift,1);
+
+    std::ofstream out("meanLeafsAgg",std::ios_base::binary);
+
+    aleafs.Serialize(out,*forest);
+
+    out.close();
+
+
+}
+
 int main(int argc, char **argv)
 {
 
-    testForestDeserialization();
+    testAggregatedLeafs();
 //    priorityQueuetest();
 
 /*    cv::Vec<float,3> tocopy;
