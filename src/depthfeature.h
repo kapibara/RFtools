@@ -76,9 +76,6 @@ private:
 };
 
 
-friend
-
-
 /*============Depth Features==============*/
 class DepthFeature
 {
@@ -89,8 +86,9 @@ public:
     {
         DepthFeature result;
 
-        result.u_ = f1.u_*w1 + f2.u_*w2;
-        result.v_ = f1.v_*w1 + f2.v_*w2;
+        result.u_ = (f1.u_*w1 + f2.u_*w2)*(1/(w1+w2));
+        result.v_ = (f1.v_*w1 + f2.v_*w2)*(1/(w1+w2));
+        result.zeroplane_ = f1.zeroplane_;
 
         return result;
     }

@@ -15,7 +15,8 @@ template<class DepthFeature, class Stats, typename ElemType, int S>
 class AggregatedLeafs
 {
 public:
-    typedef std::vector<VotesAggregator<ElemType,S> >::iterator iterator;
+    typedef typename std::vector<VotesAggregator<ElemType,S> >::iterator iterator;
+    typedef typename std::vector<VotesAggregator<ElemType,S> >::const_iterator const_iterator;
 
     AggregatedLeafs()
     {
@@ -24,22 +25,40 @@ public:
         sizeThr_ = -1;
     }
 
-    AggregatedLeafs(int tcount, int maxNodes)
+    AggregatedLeafs(int tcount, int maxNodes, int votesCount)
     {
         varThr_ = -1;
         wThr_ = -1;
         sizeThr_ = -1;
         maxNodes_ = maxNodes;
+        votesCount_= votesCount;
         leafs_.resize(tcount);
+        leafcount_.assign(tcount,0);
+        VotesAggregator<ElemType,S> tmp(votesCount);
+
+        for(int i=0; i<tcount; i++){
+            leafs_[i] = new std::vector<VotesAggregator<ElemType,S> >();
+            leafs_[i]->assign(maxNodes,tmp);
+        }
 
     }
 
-    iterator &begin(int elemIdx)
+    iterator begin(int elemIdx)
     {
         return leafs_[elemIdx]->begin();
     }
 
-    iterator &end(int elemIdx)
+    iterator end(int elemIdx)
+    {
+        return leafs_[elemIdx]->begin();
+    }
+
+    const_iterator begin(int elemIdx) const
+    {
+        return leafs_[elemIdx]->begin();
+    }
+
+    const_iterator end(int elemIdx) const
     {
         return leafs_[elemIdx]->begin();
     }
@@ -57,24 +76,57 @@ public:
         sizeThr_ = thr;
     }
 
-    int TreeCount()
+    int TreeCount() const
     {
         return leafs_.size();
     }
 
-    int LeafCount(int elemIdx)
+    int LeafCount(int elemIdx) const
     {
+
         return leafcount_[elemIdx];
     }
 
-    int MaxNodesCount()
+    int &operator[](int elemIdx)
+    {
+
+        return leafcount_[elemIdx];
+    }
+
+    int operator[](int elemIdx) const
+    {
+
+        return leafcount_[elemIdx];
+    }
+
+    int MaxNodesCount() const
     {
         return maxNodes_;
     }
 
-    int VotesCount()
+    int VotesCount() const
     {
         return votesCount_;
+    }
+
+    void Denormalize(const std::vector<float> &mean, const std::vector<float> &var)
+    {
+        for(int t = 0 ; t < leafs_.size(); t++)
+        {
+            for(int j=0; j< leafs_[t]->size(); j++){
+                get(t,j).Denormalize(mean,var);
+            }
+        }
+    }
+
+    void Normalize(const std::vector<float> &mean, const std::vector<float> &var)
+    {
+        for(int t = 0 ; t < leafs_.size(); t++)
+        {
+            for(int j=0; j< leafs_[t]->size(); j++){
+                get(t,j).Normalize(mean,var);
+            }
+        }
     }
 
     void Build(Forest<DepthFeature,Stats> &forest, mean_shift::MeanShift &mshift, int votesCount){
@@ -105,6 +157,7 @@ public:
 
         for(int t=0; t<leafs_.size(); t++){
             nodeCount = leafcount_[t];
+
             out.write((const char *)&nodeCount, sizeof(nodeCount));
 
             for(int i=0; i<leafs_[t]->size(); i++){
@@ -148,14 +201,16 @@ public:
         in.read(( char *)&maxNodes_, sizeof(maxNodes_));
         in.read(( char *)&votesCount_, sizeof(votesCount_));
         leafcount_.resize(treeCount);
-        Stats tmp;
+
         std::vector<VotesAggregator<ElemType,S> > *current;
+        VotesAggregator<ElemType,S> tmp(votesCount_);
 
         int nodeIdx;
-        for(int t=0; t<leafs_.size(); t++){
+        for(int t=0; t<treeCount; t++){
             in.read((char *)&(leafcount_[t]), sizeof(leafcount_[t]));
+
             current = new std::vector<VotesAggregator<ElemType,S> >();
-            current->resize(maxNodes_);
+            current->assign(maxNodes_,tmp);
             for(int i=0; i<leafcount_[t]; i++){
                 in.read((char *)&nodeIdx,sizeof(nodeIdx));
                 current->operator [](nodeIdx).Deserialize(in);
@@ -169,9 +224,10 @@ public:
 
     VotesAggregator<ElemType,S> &get(int t, unsigned int index)
     {
+
+
         return (leafs_[t])->operator[](index);
     }
-
 
 
 private:

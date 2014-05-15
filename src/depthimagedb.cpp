@@ -65,7 +65,7 @@ void DepthFileBasedImageDBImpl::readFiles(const std::string &file,  GeneralStrin
     cv::Mat image;
     std::string tmp,filename;
 
-
+    std::cerr << "reading files from: " << file << std::endl;
 
     if (input.is_open()){
 
@@ -74,7 +74,7 @@ void DepthFileBasedImageDBImpl::readFiles(const std::string &file,  GeneralStrin
 
             input >> tmp;
             processHeader(tmp);
-            std::cout << "header: " << tmp << std::endl;
+
         }
 
         while(!input.eof()){
@@ -91,8 +91,6 @@ void DepthFileBasedImageDBImpl::readFiles(const std::string &file,  GeneralStrin
                 if (path_.length()>0){
                     filename = path_+filename;
                 }
-
-                std::cout << "reading file: " << filename << std::endl;
 
                 cache_->addToCache(filename);
                 image = cv::imread(filename,-1);

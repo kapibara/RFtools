@@ -20,6 +20,17 @@ void setTo(cv::Vec<ElemType,S> &vec, ElemType val)
 }
 
 template<class ElemType, int S>
+cv::Vec<ElemType,S> sqr(const cv::Vec<ElemType,S> &vec)
+{
+    cv::Vec<ElemType,S> result;
+    for(int i=0; i<S; i++){
+        result[i] = vec[i]*vec[i];
+    }
+    return result;
+}
+
+
+template<class ElemType, int S>
 void setTo(cv::Matx<ElemType,S,S> &mat, ElemType val)
 {
     for(int i=0; i<S; i++){
@@ -41,11 +52,6 @@ class VotesStatsT
 public:
     typedef unsigned int element_count;
     typedef typename elem_vector::const_iterator const_iterator;
-
-    VotesStatsT()
-    {
-        pointCount_ = 0;
-    }
 
     VotesStatsT(unsigned char voteElemCount = 0,unsigned int thr2 = 300*300)
     {

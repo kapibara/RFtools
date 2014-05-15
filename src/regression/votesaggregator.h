@@ -61,11 +61,32 @@ public:
         isEmpty_ = true;
     }
 
-    void Prediction(std::vector<cv::Vec<ElemType,S> > &prediction, std::vector<double> &weight,mean_shift::MeanShift &mshift)
+    void Denormalize(const std::vector<float> &mean, const std::vector<float> &std10)
     {
+        int ind = 0;
+        for(int i=0; i< elems_.size(); i++){
+            elems_[i].Denormalize(mean,std10,ind);
+            ind+=S;
+        }
+    }
+
+    void Normalize(std::vector<float> &mean, std::vector<float> &std10)
+    {
+        int ind = 0;
+        for(int i=0; i< elems_.size(); i++){
+            elems_[i].Normalize(mean,std10,ind);
+            ind+=S;
+        }
+    }
+
+    bool Prediction(std::vector<cv::Vec<ElemType,S> > &prediction, std::vector<double> &weight,mean_shift::MeanShift &mshift)     {
+        bool hademptysets = false;
         for(int i=0; i< elems_.size(); i++){
             weight[i]=elems_[i].Prediction(prediction[i],mshift);
+
+            hademptysets = hademptysets | (weight[i]<1e-5);
         }
+        return ~hademptysets;
     }
 
     /*run mean shift to create a compressed votes storage*/
@@ -100,6 +121,17 @@ public:
         }
     }
 
+    void AddVotes(const VotesAggregator<ElemType,S> &agg, ElemType w)
+    {
+/*        std::cerr << "agg.elems_.size: " << agg.elems_.size() << std::endl;
+        std::cerr << "this.elems_.size: " << agg.elems_.size() << std::endl;
+        std::cerr.flush();*/
+        isEmpty_ = false;
+        for(int i=0; i< elems_.size(); i++){
+            elems_[i].AddVotes(agg.elems_[i],w);
+        }
+    }
+
     void AddVotes(const VotesAggregator<ElemType,S> &agg, const cv::Vec<ElemType,S> &coord)
     {
         isEmpty_ = false;
@@ -108,12 +140,18 @@ public:
         }
     }
 
-    int Count(int elem)
+    int Count(int elem) const
     {
         return elems_[elem].Count();
     }
 
-    bool IsEmpty()
+    int OriCount(int elem) const
+    {
+        return elems_[elem].OriCount();
+    }
+
+
+    bool IsEmpty() const
     {
         return isEmpty_;
     }
@@ -151,11 +189,62 @@ public:
     VotesAggregatorElem()
     {
         prediction_.resize(S);
+        oriVoteCount_ = 0;
+    }
+
+    void Denormalize(const std::vector<float> &mean, const std::vector<float> &std10, int idx)
+    {
+        for(int v= 0; v<votes_.size(); v++){
+            for( int i=0; i< S; i++){
+                votes_[v][i] =  votes_[v][i]*std10[idx+i] + mean[idx+i];
+            }
+        }
     }
 
 
+    void Normalize(std::vector<float> &mean, std::vector<float> &std10, int idx)
+    {
+
+        cv::Vec<double,S> m;
+        cv::Vec<double,S> m2;
+        setTo<double,S>(m,0);
+        setTo<double,S>(m2,0);
+        for(int v= 0; v<votes_.size(); v++){
+            for(int j=0;j<S;j++){
+                m[j]+= votes_[v][j];
+                m2[j]+= votes_[v][j]*votes_[v][j];
+            }
+        }
+
+        cv::Vec<double,S> var;
+        for(int j=0;j<S;j++){
+            m[j] = m[j]/votes_.size();
+            var[j] = m2[j]/votes_.size() - m[j]*m[j];
+            if(var[j]<1e-5){
+	       //just in case it is negative or small
+                var[j] = 1;
+            }
+        }
+
+        for(int v= 0; v<votes_.size(); v++){
+            for( int i=0; i< S; i++){
+                mean[idx+i] = m[i];
+		//make std consisten with what is done in MATLAB, that is not nice
+                std10[idx+i] = std::sqrt(var[i])/10;
+                votes_[v][i] =  (votes_[v][i] - mean[idx+i])/std10[idx+i];
+            }
+        }
+
+   }
+
     double Prediction(cv::Vec<ElemType,S> &prediction, mean_shift::MeanShift &mshift)
     {
+        if(votes_.size()<=0){
+            std::cerr << "WARNING: empty point set by prediction; returning" << std::endl;
+            setTo<ElemType,S>(prediction,0);
+            return 0;
+        }
+      
         //conver points and weights to a matrix
         mean_shift::ElemType *weights_data = new mean_shift::ElemType[weights_.size()];
         mean_shift::ElemType *votes_data = new mean_shift::ElemType[votes_.size()*S];
@@ -169,32 +258,34 @@ public:
         for(int i=0; i<weights_.size();i++){
             convert(votes_[i],wrapper.setRow(i));
         }
-
+        
         mshift.setPoints(votes,weights);
 
         try{
             mshift.run();
-//            std::cerr << "clusters detected: " <<mshift.getClusterNumber() << std::endl;
+
         }catch(flann::FLANNException e){
             std::cerr << "flann exception: " << e.what() << std::endl;
         }
         catch(std::exception e){
             std::cerr << "std exception: " << e.what() << std::endl;
         }
-
-
-        flann::Matrix<mean_shift::IndexType> sizes =  mshift.getClusterSizes();
+        
+        flann::Matrix<double> clweights = mshift.getClusterWeights();
+        //flann::Matrix<mean_shift::IndexType> sizes =  mshift.getClusterSizes();
 
         //find the biggest cluster
-        mean_shift::IndexType *maxelem = std::max_element(sizes.ptr(),sizes.ptr()+sizes.cols);
-        int idx = maxelem - sizes.ptr();
-        double maxweight = ((double)(*maxelem))/votes_.size();
+        //mean_shift::IndexType *maxelem = std::max_element(sizes.ptr(),sizes.ptr()+sizes.cols);
+        double *maxelem = std::max_element(clweights.ptr(),clweights.ptr() + clweights.cols);
+        int idx = maxelem - clweights.ptr();
+        //double maxweight = ((double)(*maxelem))/votes_.size();
+        double maxweight = *maxelem;
 
         mshift.getClusterCenter(idx,prediction_);
 
         std::copy(prediction_.begin(),prediction_.end(),&(prediction[0]));
 
-        delete [] sizes.ptr();
+        delete [] clweights.ptr();
         delete [] weights_data;
         delete [] votes_data;
 
@@ -208,7 +299,7 @@ public:
         votes_.insert(votes_.end(),agg.votes_.begin(),agg.votes_.end());
     }
 
-    void AddVotes(const VotesAggregatorElem<ElemType,S> &agg, double w)
+    void AddVotes(const VotesAggregatorElem<ElemType,S> &agg, ElemType w)
     {
         weights_.reserve(agg.weights_.size());
         for(int i=0; i<agg.weights_.size();i++) {
@@ -229,15 +320,21 @@ public:
         }
     }
 
-    int Count()
+    int Count() const
     {
         return weights_.size();
+    }
+
+    int OriCount() const
+    {
+        return oriVoteCount_;
     }
 
     //aggregate votes using meanshift
     void AggregateVotes(const VotesStatsElemT<ElemType,S> &stats, mean_shift::MeanShift &mshift){
         //allocate data
         //std::cerr << "starting votes aggregation" << std::endl;
+        oriVoteCount_ = stats.Count();
 
         typename VotesStatsElemT<ElemType,S>::element_count votesCount = stats.Count();
         mean_shift::ElemType *data = new mean_shift::ElemType[votesCount*S];
@@ -303,6 +400,7 @@ public:
         out.write((const char*)&elemCount,sizeof(elemCount));
         int dims = S;
         out.write((const char*)&dims,sizeof(dims));
+        out.write((const char *)&oriVoteCount_,sizeof(oriVoteCount_));
 
         for(int i=0; i<votes_.size(); i++){
             for(int j=0; j<S; j++){
@@ -322,6 +420,7 @@ public:
         votes_.resize(elemCount);
         int dims;
         in.read((char *)&dims,sizeof(dims));
+        in.read((char *)&oriVoteCount_,sizeof(oriVoteCount_));
         for(int i=0; i<votes_.size(); i++){
             for(int j=0; j<S; j++){
                 in.read((char *)&(votes_[i][j]),sizeof(ElemType));
@@ -360,6 +459,7 @@ private:
         }
     }
 
+    int oriVoteCount_;
     std::vector<double> weights_;
     std::vector<cv::Vec<ElemType,S> > votes_;
     std::vector<mean_shift::ElemType> prediction_;

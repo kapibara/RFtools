@@ -11,6 +11,7 @@
 #include "regression/regtrainingcontext.h"
 #include "regression/votesaggregator.h"
 #include "regression/votesstatst.h"
+#include "regression/aggregatedleafs.h"
 
 #include "copyfile.h"
 
@@ -18,6 +19,7 @@
 typedef float VoteType;
 
 typedef VotesStatsT<VoteType,VoteDim> Stats;
+typedef AggregatedLeafs<DepthFeature,Stats,VoteType,VoteDim> Leafs;
 
 
 using namespace MicrosoftResearch::Cambridge::Sherwood;
@@ -76,21 +78,10 @@ int main(int argc, char ** argv)
         log << "load leafs from: " << config.leafsFile().c_str() << std::endl;
 
         std::ifstream inleafs(config.leafsFile().c_str(), std::ios_base::binary);
-        std::vector<VotesAggregator<float,3> > aggLeafs;
-        VotesAggregator<VoteType,VoteDim> tmp(db.voteClassCount());
-        int ind;
-
-        aggLeafs.assign(forest->GetTree(0).NodeCount(),tmp);
-
-        while(!inleafs.eof()){
-            inleafs.read((char *)&ind,sizeof(ind));
-            if(!inleafs.eof()){
-                aggLeafs[ind].Deserialize(inleafs);
-            }
-        }
+        Leafs aggLeafs;
+        aggLeafs.Deserialize(inleafs);
 
         log << "leafs deserialized" << std::endl;
-
 
         std::vector<std::vector<int> > leafIndicesPerTree;
         forest->Apply(db,leafIndicesPerTree,&progress);
@@ -107,6 +98,7 @@ int main(int argc, char ** argv)
         cv::Point2i current;
 
         std::vector<VotesAggregator<VoteType,VoteDim> > perImageVotes;
+        VotesAggregator<VoteType,VoteDim> tmp(db.voteClassCount());
 
         perImageVotes.assign(db.imageCount(),tmp);
 
@@ -117,7 +109,7 @@ int main(int argc, char ** argv)
             imgIds[i] = db.getImageIdx(i);
             x[i] = current.x;
             y[i] = current.y;
-            perImageVotes[imgIds[i]].AddVotes(aggLeafs[leafIndicesPerTree[0][i]]);
+            perImageVotes[imgIds[i]].AddVotes(aggLeafs.get(0,leafIndicesPerTree[0][i]));
         }
 
         std::ostream &ids = cache.openBinStream("imgIds");
@@ -131,12 +123,58 @@ int main(int argc, char ** argv)
 
         log << "serializing aggregated votes" << std::endl;
 
+        std::vector<cv::Vec<VoteType,VoteDim> > prediction;
+        std::vector<double> weights;
+        std::vector<cv::Vec<VoteType,VoteDim> > gt;
+        std::ostream &preout = cache.openBinStream("pre");
+        std::ostream &gtout = cache.openBinStream("gt");
+
+        prediction.resize(1);
+        weights.resize(1);
+
+        mean_shift::MeanShift mshift;
+        std::vector<float> mean;
+        std::vector<float> std10;
+
+        mean.resize(3);
+        std10.resize(3);
+
+        mshift.setRadius(15);
+        mshift.setMaxIter(30);
+        mshift.setMaxNeigboursCount(30000);
+
         std::ostream &aggVotesStream = cache.openBinStream("aggVotes");
         GroundTruthDecorator<VoteType,VoteDim> deco;
         for(int i=0; i<db.imageCount(); i++){
             /*create the decoration*/
+            std::cerr << "image processing: " << perImageVotes[i].Count(0) << std::endl;
+
+            //perImageVotes[i].Normalize(mean,std10);
+
+
+            perImageVotes[i].Prediction(prediction,weights,mshift);
+            /*for(int l=0; l<prediction.size();l++){
+                for(int s=0; s<VoteDim; s++){
+                    prediction[l][s] = prediction[l][s]*std10[l*VoteDim+s] + mean[l*VoteDim+s];
+                }
+            }*/
+            serializeVoteVector<VoteType,VoteDim>(prediction, preout);
+
+
+            //perImageVotes[i].Denormalize(mean,std10);
             deco = GroundTruthDecorator<VoteType,VoteDim>(perImageVotes[i]);
-            deco.SetGT(db.getGT(i));
+
+            gt = db.getGT(i);
+
+            for(int l=0; l<prediction.size();l++){
+                for(int s=0; s<VoteDim; s++){
+                    gt[l][s] = gt[l][s]*config.forest(0).std_[l*VoteDim+s] + config.forest(0).mean_[l*VoteDim+s];
+                }
+            }
+
+            serializeVoteVector<VoteType,VoteDim>(gt, gtout);
+
+            deco.SetGT(gt);
             deco.Serialize(aggVotesStream);
         }
 

@@ -129,7 +129,7 @@ target_link_libraries(${EXECH} ${OpenCV_LIBS} ${Boost_LIBS})
 target_link_libraries(${EXEREG} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
 target_link_libraries(${TESTS} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
 target_link_libraries(${FEATUREGEN} ${OpenCV_LIBS} ${Boost_LIBS})
-target_link_libraries(${EXECCOMB} ${OpenCV_LIBS} ${Boost_LIBS})
+target_link_libraries(${EXECCOMB} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
 target_link_libraries(${EXECSEQ} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
 
 #install(TARGETS ${EXECCL} DESTINATION .)

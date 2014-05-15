@@ -249,6 +249,8 @@ int main(int argc, char **argv)
             std::ostream &leafIds = cache.openBinStream("leafIds");
             serializeVector<int>(leafIds,leafIndicesPerTree[0]);
 
+            cache.closeAllStreams();
+
             std::vector<int> imgIds(db.Count(),0);
             std::vector<int> x(db.Count(),0);
             std::vector<int> y(db.Count(),0);
@@ -261,7 +263,6 @@ int main(int argc, char **argv)
             perImageVotes.assign(db.imageCount(),tmp);
 
             log << "aggregating votes accross the images" << std::endl;
-
 
             for(int i=0; i<db.Count(); i++){
                 db.getDataPoint(i,tmpstr,current);
@@ -282,6 +283,8 @@ int main(int argc, char **argv)
             std::ostream &yvals = cache.openBinStream("yVals");
             serializeVector<int>(yvals,y);
 
+            cache.closeAllStreams();
+
             log << "serializing aggregated votes" << std::endl;
 
             std::vector<cv::Vec<VoteType,VoteDim> > prediction;
@@ -297,23 +300,27 @@ int main(int argc, char **argv)
             finalshift.setMaxNeigboursCount(config.maxNN());
 
             std::ostream &aggVotesStream = cache.openBinStream("aggVotes");
-            std::ostream &errStream = cache.openBinStream("errors");
             std::ostream &preStream = cache.openBinStream("predictions");
             std::ostream &gtStream = cache.openBinStream("gt");
 
             GroundTruthDecorator<VoteType,VoteDim> deco;
             for(int i=0; i<db.imageCount(); i++){
                 //get prediction
-                perImageVotes[i].Prediction(prediction,weights,finalshift);
-                computeError(prediction,db.getGT(i),error);
+
+                if(perImageVotes[i].Prediction(prediction,weights,finalshift)){
+                    log << "prediction for image " << db.imageIdx2Filename(i) << " computed" << std::endl;
+                }else{
+                    log << "prediction for image " << db.imageIdx2Filename(i) << " failed" << std::endl;
+                }
+
                 //serialize
-                serializeVoteVector<VoteType,VoteDim>(error, errStream);
                 serializeVoteVector<VoteType,VoteDim>(prediction, preStream);
                 serializeVoteVector<VoteType,VoteDim>(db.getGT(i), gtStream);
                 //create the decoration
                 deco = GroundTruthDecorator<VoteType,VoteDim>(perImageVotes[i]);
                 deco.SetGT(db.getGT(i));
                 deco.Serialize(aggVotesStream);
+                log << "prediction for image " << i << " done"<< std::endl;
             }
 
             log << "indices saved" << std::endl;

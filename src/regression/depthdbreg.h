@@ -93,6 +93,7 @@ public:
     }
 
 
+
     bool getDataPointVote(index_type i, std::vector<cv::Vec<ElemType,S> > &vote){
 
             if (vote.size() != voteClassCount_){

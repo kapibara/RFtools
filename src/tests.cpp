@@ -8,6 +8,9 @@
 #include "regression/depthdbreg.h"
 #include "regression/votesaggregator.h"
 #include "regression/aggregatedleafs.h"
+
+#include "seq/forestmerger.h"
+
 #include "serialization.h"
 #include "rfutils.h"
 #include "featureaccomulator.h"
@@ -385,10 +388,108 @@ void testAggregatedLeafs()
 
 }
 
-int main(int argc, char **argv)
+#define VoteDim 3
+typedef float VoteType;
+
+typedef VotesStatsT<VoteType,VoteDim> Stats;
+typedef AggregatedLeafs<DepthFeature,Stats,VoteType,VoteDim> Leafs;
+
+void compateForests()
 {
 
-    testAggregatedLeafs();
+}
+
+void testForestMerge()
+{
+    std::ifstream f1in("/home/kuznetso/tmp/GroupTestD15wi7FullNorm/test2/09_00_55_09/forest",std::ios_base::binary);
+    std::auto_ptr<Forest<DepthFeature, Stats> > f1 = Forest<DepthFeature, Stats>::Deserialize(f1in);
+    std::ifstream f2in("/home/kuznetso/tmp/GroupTestD15wi7FullNorm/test3/09_00_55_10/forest",std::ios_base::binary);
+    std::auto_ptr<Forest<DepthFeature, Stats> > f2 = Forest<DepthFeature, Stats>::Deserialize(f2in);
+
+
+    Leafs l1,l2;
+    mean_shift::MeanShift mshift;
+    mshift.setRadius(10);
+    mshift.setMaxIter(30);
+    mshift.setMaxNeigboursCount(30000);
+
+    l1.SetNodeSizeThreashold(20000);
+    l1.SetSmallWeightsThreashold(0.1);
+
+    l2.SetNodeSizeThreashold(20000);
+    l2.SetSmallWeightsThreashold(0.1);
+
+    l1.Build(*f1,mshift,1);
+    l2.Build(*f2,mshift,1);
+
+    std::vector<float> mean;
+    std::vector<float> std10;
+
+    mean.resize(3);
+    std10.resize(3);
+
+    mean[0] = 3.34;
+    mean[1] = -41.17;
+    mean[2] = 1.54;
+
+    std10[0] = 2.32;
+    std10[1] = 0.95;
+    std10[2] = 0.65;
+
+    l1.Denormalize(mean,std10);
+
+    mean[0] = -2.10;
+    mean[1] = -12.93;
+    mean[2] = 1.22;
+
+    std10[0] = 2.32;
+    std10[1] = 0.95;
+    std10[2] = 0.65;
+
+    l2.Denormalize(mean,std10);
+
+    std::cerr << "denormalization done"<< std::endl;
+    std::cerr.flush();
+
+    ForestMerger<Stats> forestMerger;
+    AggregatedLeafsMerger<VoteType,VoteDim> aggMerger;
+
+    forestMerger.SetWeights(0.6,0.4);
+    std::auto_ptr<Forest<DepthFeature, Stats> > fm = forestMerger.mergeForests(*f1,*f2);
+
+    std::cerr << "forests merged"<< std::endl;
+    std::cerr.flush();
+
+    aggMerger.SetWeights(0.6,0.4);
+    std::auto_ptr<Leafs> lm = aggMerger.mergeAggregatedLeafs(l1,l2);
+
+    std::cerr << "leafs merged: "<< lm->LeafCount(0) << std::endl;
+    std::cerr.flush();
+
+    std::ofstream outputF("mergedForest",std::ios_base::binary);
+    fm->Serialize(outputF);
+    outputF.close();
+
+    std::cerr << "forest serialized"<< std::endl;
+    std::cerr.flush();
+
+    std::ofstream outputL("mergedLeafs",std::ios_base::binary);
+    lm->Serialize(outputL);
+    outputL.close();
+
+    std::cerr << "done"<< std::endl;
+    std::cerr.flush();
+
+}
+
+int main(int argc, char **argv)
+{
+    testForestMerge();
+
+
+//    agg.Prediction(prediction,weights,finalshift);
+
+//    testAggregatedLeafs();
 //    priorityQueuetest();
 
 /*    cv::Vec<float,3> tocopy;

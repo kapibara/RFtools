@@ -36,6 +36,16 @@ public:
         return *out;
     }
 
+    void closeAllStreams()
+    {
+        for(int i=0; i<openStreams_.size(); i++){
+            openStreams_[i]->close();
+            delete openStreams_[i];
+        }
+
+        openStreams_.clear();
+    }
+
 private:
 
 

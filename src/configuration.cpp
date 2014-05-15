@@ -104,7 +104,10 @@ void Configuration::readForestsList(bpt::ptree &props)
         std::string lf = forest.get<std::string>("leafsfile","");
         ForestParam fp = ForestParam(ff,lf);
 
+
+
         readFloatVector(forest.get<std::string>("bounds",""),fp.bounds_);
+
         readFloatVector(forest.get<std::string>("mean",""),fp.mean_);
         readFloatVector(forest.get<std::string>("std",""),fp.std_);
 
