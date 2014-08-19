@@ -65,11 +65,12 @@ Configuration::Configuration(std::istream &input)
 
         bpt::ptree forestProperties = properties.get_child("forestproperties");
         forestParam_.NumberOfTrees = forestProperties.get<int>("treecount");
+
         forestParam_.MaxDecisionLevels = forestProperties.get<int>("depth")-1;
         forestParam_.NumberOfCandidateFeatures = forestProperties.get<int>("featurespernode");
         forestParam_.NumberOfCandidateThresholdsPerFeature = forestProperties.get<int>("thrperfeature");
         gainType_ = forestProperties.get<std::string>("gaintype","variance");
-
+        otherForestFile_ = forestProperties.get<std::string>("otherforest","");
 
         bpt::ptree featureproperties = properties.get_child("featureproperties");
         dfParams_.uvlimit_ = featureproperties.get<int>("uvlimit");

@@ -55,6 +55,7 @@ public:
     std::string cacheFolderName() const{return cacheFolderName_;}
     std::string databaseFile() const{return dbFile_;}
     std::string featuresFile() const{return featuresLocation_;}
+    std::string otherForestFile() const {return otherForestFile_;}
 
     /*default function; for backward compatibility*/
     std::string forestFile() const{return forests_[0].ff_;}
@@ -83,6 +84,7 @@ private:
 
     Factory factory_;
     std::string forestType_;
+    std::string otherForestFile_;
     std::string dbFile_;
     std::string featuresLocation_;
     std::string cacheFolderName_;

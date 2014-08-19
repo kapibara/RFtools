@@ -24,11 +24,6 @@ DepthFeature PartialDepthFeatureFactory::getDepthFeature(MicrosoftResearch::Camb
     return DepthFeature(u,v,param_.zeroplane_);
 }
 
-
-
-
-
-
 /*====================Feature====================*/
 
 float DepthFeature::GetResponse(MicrosoftResearch::Cambridge::Sherwood::IDataPointCollection &data, unsigned int dataIndex)

@@ -62,6 +62,12 @@ public:
         factory_.setCurrentNode(nodeIndex);
     }
 
+    void setCurrentTree(int tree)
+    {
+
+    }
+
+
     void collectStats(const DepthFeature &feature, float threashold, double gain)
     {
         if(accomulator_!=0){

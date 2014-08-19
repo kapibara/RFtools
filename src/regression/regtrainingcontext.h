@@ -6,6 +6,7 @@
 #include "depthfeature.h"
 #include "hough/votesstats.h"
 #include "featureaccomulator.h"
+#include "forestfeaturereader.h"
 
 #include <ostream>
 
@@ -20,9 +21,11 @@ public:
     {
         nClasses_ = nClasses;
         accomulator_ = 0;
+        reader_ = 0;
         type_ = RegTrainingContext::Variance;
         setGainType(gtype);
         thr2_ = thr2;
+        distNorm_ = 8*(factory.getParameters().uvlimit_)*(factory.getParameters().uvlimit_);
     }
 
     DepthFeature GetRandomFeature(MicrosoftResearch::Cambridge::Sherwood::Random& random)
@@ -32,6 +35,10 @@ public:
 
     void setFeatureAccomulator(FeatureAccomulator *ptr){
         accomulator_ = ptr;
+    }
+
+    void setFeatureReader(ForestFeatureReader *ptr){
+        reader_ = ptr;
     }
 
     Stats GetStatisticsAggregator()
@@ -81,8 +88,12 @@ public:
             pvv = parent.LogEntropy();
         }
 
-        return ((pvv - w1*lvv) - w2*rvv);
-//        return ((pvv - lvv) - rvv);
+        double dist = 0.0;
+        if(accomulator_!=0 & reader_!=0){
+            dist = depthFeatureDistance(accomulator_->getTopFeature(),reader_->getFeature(currentTree_,currentNode_));
+        }
+
+        return ((pvv - w1*lvv) - w2*rvv)*(1-0.0*dist/distNorm_); //reduce information gain
     }
 
     bool ShouldTerminate(const Stats& parent, const Stats& leftChild, const Stats& rightChild, double gain)
@@ -99,6 +110,11 @@ public:
         factory_.setCurrentNode(nodeIndex);
     }
 
+    void setCurrentTree(int tree)
+    {
+        currentTree_ = tree;
+    }
+
     void collectStats(const DepthFeature &feature, float threashold, double gain)
     {
         if(accomulator_!=0){
@@ -111,10 +127,13 @@ private:
     GainType type_;
 
     int currentNode_;
+    int currentTree_;
     FeatureAccomulator *accomulator_;
+    ForestFeatureReader *reader_;
 
     unsigned char nClasses_;
     unsigned int thr2_;
+    double distNorm_;
 };
 
 #endif // HOUGHTRAININGCONTEXT_H

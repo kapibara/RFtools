@@ -60,6 +60,10 @@ public:
 
     }
 
+    void setCurrentTree(int tree){
+
+    }
+
     void collectStats(const DepthFeature &feature, float threashold, double gain)
     {
 

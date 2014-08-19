@@ -10,6 +10,7 @@
 #include "depthfeature.h"
 #include "parameter.h"
 #include "localcache.h"
+#include "forestfeaturereader.h"
 #include "TrainingParameters.h"
 #include "stubtrainingcontext.h"
 #include "regression/votesstatst.h"
@@ -80,12 +81,18 @@ ITrainingContext<DepthFeature,Stats>  *createTrainingContext(const Configuration
 {
     ITrainingContext<DepthFeature,Stats> *context = 0;
     FeatureAccomulator *accomulator = 0;
+    ForestFeatureReader *reader = 0;
     TrainingParameters tp = config.forestParameters();
 
     if(config.serializeInfo()){
         std::ostream &featureOutput = cache.openBinStream("accomulatedFeatures");
         accomulator = new FeatureAccomulator(featureOutput,tp.NumberOfCandidateFeatures*tp.NumberOfCandidateThresholdsPerFeature);
+        if(!config.otherForestFile().empty()){
+            std::ifstream inf(config.otherForestFile().c_str());
+            reader = new ForestFeatureReader(inf);
+        }
     }
+
 
     switch(config.factoryType()){
     case Configuration::FeaturePool:
@@ -101,9 +108,8 @@ ITrainingContext<DepthFeature,Stats>  *createTrainingContext(const Configuration
         cache.log() << "feature factory: FullDepthFeatureFactory" << std::endl;
         FullDepthFeatureFactory *fff = new FullDepthFeatureFactory(config.featureParameters());
         context = new RegTrainingContext<Stats,FullDepthFeatureFactory>(classCount,*fff,config.gainType(),config.voteDistThr()*config.voteDistThr());
-        if (config.serializeInfo()){
-            ((RegTrainingContext<Stats,FullDepthFeatureFactory> *)context)->setFeatureAccomulator(accomulator);
-        }
+        ((RegTrainingContext<Stats,FullDepthFeatureFactory> *)context)->setFeatureAccomulator(accomulator);
+        ((RegTrainingContext<Stats,FullDepthFeatureFactory> *)context)->setFeatureReader(reader);
         break;
     }
     case Configuration::PartialFeaturesFactory:
@@ -111,9 +117,8 @@ ITrainingContext<DepthFeature,Stats>  *createTrainingContext(const Configuration
         cache.log() << "feature factory: PartialDepthFeatureFactory" << std::endl;
         PartialDepthFeatureFactory *pff = new PartialDepthFeatureFactory(config.featureParameters());
         context = new RegTrainingContext<Stats,PartialDepthFeatureFactory>(classCount,*pff,config.gainType(),config.voteDistThr()*config.voteDistThr());
-        if (config.serializeInfo()){
-            ((RegTrainingContext<Stats,PartialDepthFeatureFactory> *)context)->setFeatureAccomulator(accomulator);
-        }
+        ((RegTrainingContext<Stats,PartialDepthFeatureFactory> *)context)->setFeatureAccomulator(accomulator);
+        ((RegTrainingContext<Stats,FullDepthFeatureFactory> *)context)->setFeatureReader(reader);
         break;
     }
     default:

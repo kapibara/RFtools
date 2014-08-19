@@ -7,6 +7,7 @@
 #include <vector>
 #include <queue>
 
+
 class FeatureAccomulator
 {
 public:
@@ -29,6 +30,11 @@ public:
     }
 
     bool addCurrentParameters(const DepthFeature &f, float threashold, double gain);
+
+    DepthFeature getTopFeature()
+    {
+        return accomulator_.top().f_;
+    }
 
     struct FeatureGainType{
         DepthFeature f_;

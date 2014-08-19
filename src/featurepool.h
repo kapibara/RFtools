@@ -26,6 +26,12 @@ public:
         return fpnode_;
     }
 
+    DepthFeatureParameters getParameters()
+    {
+        //bad.. but return default
+        return DepthFeatureParameters();
+    }
+
     DepthFeature getDepthFeature(MicrosoftResearch::Cambridge::Sherwood::Random &random);
 
     void setCurrentNode(int nodeIndex)

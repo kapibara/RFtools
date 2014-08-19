@@ -53,6 +53,11 @@ public:
         out_.write((const char *)(&currentNode_),sizeof(currentNode_));
     }
 
+    void setCurrentTree(int treeIndex)
+    {
+
+    }
+
     void collectStats(const DepthFeature &feature, float threashold, double gain)
     {}
 

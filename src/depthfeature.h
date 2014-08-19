@@ -50,7 +50,10 @@ public:
 
     void setParameters(const DepthFeatureParameters &params) {param_ = params;}
 
-    DepthFeatureParameters getParameters();
+    DepthFeatureParameters getParameters()
+    {
+        return param_;
+    }
 
 private:
     DepthFeatureParameters param_;
@@ -69,7 +72,10 @@ public:
 
     void setParameters(const DepthFeatureParameters &params) {param_ = params;}
 
-    DepthFeatureParameters getParameters();
+    DepthFeatureParameters getParameters()
+    {
+        return param_;
+    }
 
 private:
     DepthFeatureParameters param_;
@@ -81,6 +87,16 @@ class DepthFeature
 {
 
 public:
+
+    friend double depthFeatureDistance(const DepthFeature &f1, const DepthFeature &f2)
+    {
+        cv::Point2i deltau = f1.u_ - f2.u_;
+        cv::Point2i deltav = f1.v_ - f2.v_;
+
+
+        return (deltau.x*deltau.x + deltau.y*deltau.y + deltav.x*deltav.x+ deltav.y*deltav.y);
+    }
+
 
     friend DepthFeature linearCombination(const DepthFeature &f1, const DepthFeature &f2, float w1, float w2)
     {

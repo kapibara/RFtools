@@ -54,6 +54,7 @@ set(GENERAL_HEADERS /
             colorgenerator.h /
             configuration.h /
             copyfile.h /
+            forestfeaturereader.h
 )
 
 set(CL_SOURCE ${CL_FOLDER}/depthdb.cpp /
@@ -94,7 +95,8 @@ set(GENERAL_SOURCE  /
                     nodedistributionimagestats.cpp /
                     colorgenerator.cpp /
                     configuration.cpp /
-                    copyfile.cpp
+                    copyfile.cpp /
+                    forestfeaturereader.cpp
 )
 
 set(SEQ_SOURCE ${SEQ_FOLDER}/forestmerger.cpp
