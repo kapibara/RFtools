@@ -30,7 +30,8 @@ public:
 
     DepthFeature GetRandomFeature(MicrosoftResearch::Cambridge::Sherwood::Random& random)
     {
-        return factory_.getDepthFeature(random);
+        last_ = factory_.getDepthFeature(random);
+        return last_;
     }
 
     void setFeatureAccomulator(FeatureAccomulator *ptr){
@@ -88,12 +89,15 @@ public:
             pvv = parent.LogEntropy();
         }
 
-        double dist = 0.0;
-        if(accomulator_!=0 & reader_!=0){
-            dist = depthFeatureDistance(accomulator_->getTopFeature(),reader_->getFeature(currentTree_,currentNode_));
+        double dist = 1.0;
+        if(reader_!=0){
+            //take the last returned feature (according to the framework
+            //-should be always set
+            //-should correspond to the current feature
+            dist = dfnrmcorr(last_,reader_->getFeature(currentTree_,currentNode_));
         }
 
-        return ((pvv - w1*lvv) - w2*rvv)*(1-0.0*dist/distNorm_); //reduce information gain
+        return ((pvv - w1*lvv) - w2*rvv)*(0.8 + 0.2*dist); //reduce information gain
     }
 
     bool ShouldTerminate(const Stats& parent, const Stats& leftChild, const Stats& rightChild, double gain)
@@ -130,6 +134,7 @@ private:
     int currentTree_;
     FeatureAccomulator *accomulator_;
     ForestFeatureReader *reader_;
+    DepthFeature last_;
 
     unsigned char nClasses_;
     unsigned int thr2_;

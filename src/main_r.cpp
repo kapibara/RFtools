@@ -139,7 +139,7 @@ int main(int argc, char **argv)
 
     std::cout << "configuration loaded" << std::endl;
 
-    LocalCache cache(config.cacheFolderName(),"/home/kuznetso/tmp");
+    LocalCache cache(config.cacheFolderName(),"/usr0/home/kuznetso/CPP/data/");
 
     if(!cache.init()){
         std::cerr << "failed to initialize temporary directory" << std::endl;

@@ -88,13 +88,23 @@ class DepthFeature
 
 public:
 
-    friend double depthFeatureDistance(const DepthFeature &f1, const DepthFeature &f2)
+    friend double dfL2(const DepthFeature &f1, const DepthFeature &f2)
     {
         cv::Point2i deltau = f1.u_ - f2.u_;
         cv::Point2i deltav = f1.v_ - f2.v_;
 
 
         return (deltau.x*deltau.x + deltau.y*deltau.y + deltav.x*deltav.x+ deltav.y*deltav.y);
+    }
+
+
+    friend double dfnrmcorr(const DepthFeature &f1, const DepthFeature &f2)
+    {
+        double prod = (f1.u_.x*f2.u_.x + f1.u_.y*f2.u_.y + f1.v_.x*f2.v_.x + f1.v_.y*f2.v_.y);
+        double n1 = f1.u_.x*f1.u_.x + f1.u_.y*f1.u_.y + f1.v_.x* f1.v_.x + f1.v_.y* f1.v_.y;
+        double n2 = f2.u_.x*f2.u_.x + f2.u_.y*f2.u_.y + f2.v_.x* f2.v_.x + f2.v_.y* f2.v_.y;
+
+        return prod/n1/n2;
     }
 
 
