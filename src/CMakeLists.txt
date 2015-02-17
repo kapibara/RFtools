@@ -5,11 +5,14 @@ set(FEATUREGEN FeatureGen)
 set(TESTS tests)
 set(EXECCOMB DepthRFComb)
 set(EXECSEQ DepthRFSeq)
+set(EXECHAND HandPoseTT)
+set(EXECHANDTEST HandPoseTest)
 
 set(CL_FOLDER classification)
 set(H_FOLDER hough)
 set(REG_FOLDER regression)
 set(SEQ_FOLDER seq)
+set(HANDPOSE_FOLDER handpose)
 
 set(CL_HEADERS ${CL_FOLDER}/depthdb.h /
             ${CL_FOLDER}/classstats.h /
@@ -54,7 +57,12 @@ set(GENERAL_HEADERS /
             colorgenerator.h /
             configuration.h /
             copyfile.h /
-            forestfeaturereader.h
+            forestfeaturereader.h /
+            calibration.h /
+)
+
+set(HANDPOSE_HEADERS 
+
 )
 
 set(CL_SOURCE ${CL_FOLDER}/depthdb.cpp /
@@ -96,10 +104,15 @@ set(GENERAL_SOURCE  /
                     colorgenerator.cpp /
                     configuration.cpp /
                     copyfile.cpp /
-                    forestfeaturereader.cpp
+                    forestfeaturereader.cpp /
+                    calibration.cpp /
 )
 
 set(SEQ_SOURCE ${SEQ_FOLDER}/forestmerger.cpp
+
+)
+
+set(HANDPOSE_SOURCE 
 
 )
 
@@ -115,8 +128,6 @@ set(FOREST ${Forest_DIR}/Forest.h /
            ${Forest_DIR}/TrainingParameters.h /
            ${Forest_DIR}/Tree.h)
 
-
-
 add_executable(${EXECCL} main_cl.cpp ${CL_SOURCE} ${CL_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
 add_executable(${EXECH} main_h.cpp ${HOUGH_SOURCE} ${HOUGH_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
 add_executable(${TESTS} tests.cpp ${CL_SOURCE} ${CL_HEADERS} ${HOUGH_SOURCE} ${HOUGH_HEADERS} ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${FOREST})
@@ -124,6 +135,8 @@ add_executable(${FEATUREGEN} feature_gen.cpp ${GENERAL_SOURCE})
 add_executable(${EXEREG} main_r.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE})
 add_executable(${EXECCOMB} main_comb.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE})
 add_executable(${EXECSEQ} main_seq.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE} ${SEQ_SOURCE} ${SEQ_HEADERS})
+add_executable(${EXECHAND} main_hand.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE} ${HANDPOSE_HEADERS} ${HANDPOSE_SOURCE})
+add_executable(${EXECHANDTEST} main_handtest.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE} ${HANDPOSE_HEADERS} ${HANDPOSE_SOURCE})
 
 
 target_link_libraries(${EXECCL} ${OpenCV_LIBS} ${Boost_LIBS})
@@ -133,12 +146,15 @@ target_link_libraries(${TESTS} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
 target_link_libraries(${FEATUREGEN} ${OpenCV_LIBS} ${Boost_LIBS})
 target_link_libraries(${EXECCOMB} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
 target_link_libraries(${EXECSEQ} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
+target_link_libraries(${EXECHAND} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
+target_link_libraries(${EXECHANDTEST} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
 
 #install(TARGETS ${EXECCL} DESTINATION .)
-install(TARGETS ${EXECH} DESTINATION .)
-install(TARGETS ${TESTS} DESTINATION .)
-install(TARGETS ${FEATUREGEN} DESTINATION .)
-install(TARGETS ${EXEREG} DESTINATION .)
-install(TARGETS ${EXECCOMB} DESTINATION .)
-install(TARGETS ${EXECSEQ} DESTINATION .)
-
+install(TARGETS ${EXECH} DESTINATION . OPTIONAL)
+install(TARGETS ${TESTS} DESTINATION . OPTIONAL)
+install(TARGETS ${FEATUREGEN} DESTINATION . OPTIONAL)
+install(TARGETS ${EXEREG} DESTINATION . OPTIONAL)
+install(TARGETS ${EXECCOMB} DESTINATION . OPTIONAL)
+install(TARGETS ${EXECSEQ} DESTINATION . OPTIONAL)
+install(TARGETS ${EXECHAND} DESTINATION . OPTIONAL)
+install(TARGETS ${EXECHANDTEST} DESTINATION . OPTIONAL)

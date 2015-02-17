@@ -24,7 +24,8 @@ public:
         wThr_ = -1;
         sizeThr_ = -1;
     }
-
+/*This constructor is used in merger -> useless for simple votes aggregation
+ **/
     AggregatedLeafs(int tcount, int maxNodes, int votesCount)
     {
         varThr_ = -1;
@@ -236,13 +237,16 @@ private:
     {
         int leafcount = 0;
         for(int i=0; i< tree.NodeCount();i++){
+            //std::cerr << "iteration: " << i << std::endl;
             if(tree.GetNode(i).IsLeaf()){
                 if(varThr_< 0 ||
                     tree.GetNode(i).TrainingDataStatistics.VoteVariance() < varThr_){
                     if (sizeThr_ <0 ||
-                        tree.GetNode(i).TrainingDataStatistics.Count() < sizeThr_){
+                        tree.GetNode(i).TrainingDataStatistics.RealVotesCount() < sizeThr_){
                         leafcount++;
+                        //std::cerr << "AggregateVotes()" << std::endl;
                         aggLeafs[i].AggregateVotes(tree.GetNode(i).TrainingDataStatistics,mshift);
+                        //std::cerr << "FilterSmallWeights()" << std::endl;
                         aggLeafs[i].FilterSmallWeights(wThr_);
                     }else{
                         std::cerr << "threshold the size: node " << i << std::endl;
@@ -253,6 +257,8 @@ private:
 
             }
         }
+
+        std::cerr << "Leaf count: " << leafcount << std::endl;
 
         return leafcount;
     }

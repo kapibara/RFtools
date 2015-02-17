@@ -41,6 +41,11 @@ public:
         gt_ = gt;
     }
 
+    void SetAggregator(const VotesAggregator<ElemType,S> &agg)
+    {
+        agg_ = &agg;
+    }
+
 private:
     const VotesAggregator<ElemType,S> *agg_;
     std::vector<cv::Vec<ElemType,S> > gt_;
@@ -96,11 +101,12 @@ public:
         elems_.resize(stats.ElemCount());
         int ind = 0;
 
-//        std::cerr << "stats size: " << stats.Count() << std::endl;
+        //std::cerr << "stats size: " << stats.Count() << std::endl;
 
         for(typename VotesStatsT<ElemType,S>::const_iterator i = stats.begin(); i != stats.end(); i++){
             if(i->Count()>0){
                 elems_[ind].AggregateVotes(*i,mshift);
+                mshift.Clean();
                 ind++;
             }
         }
@@ -333,11 +339,13 @@ public:
     //aggregate votes using meanshift
     void AggregateVotes(const VotesStatsElemT<ElemType,S> &stats, mean_shift::MeanShift &mshift){
         //allocate data
-        //std::cerr << "starting votes aggregation" << std::endl;
-        oriVoteCount_ = stats.Count();
 
-        typename VotesStatsElemT<ElemType,S>::element_count votesCount = stats.Count();
+        oriVoteCount_ = stats.Count();
+        //std::cerr << "starting votes aggregation: " << oriVoteCount_ << std::endl;
+
+        typename VotesStatsElemT<ElemType,S>::element_count votesCount = oriVoteCount_;
         mean_shift::ElemType *data = new mean_shift::ElemType[votesCount*S];
+
         flann::Matrix<mean_shift::ElemType> votes(data,votesCount,S);
         mean_shift::MatrixRow wrapper(votes);
         int row = 0;
@@ -355,7 +363,7 @@ public:
 
         try{
             mshift.run();
-//            std::cerr << "clusters detected: " <<mshift.getClusterNumber() << std::endl;
+        //    std::cerr << "clusters detected: " <<mshift.getClusterNumber() << std::endl;
         }catch(flann::FLANNException e){
             std::cerr << "flann exception: " << e.what() << std::endl;
         }
@@ -389,9 +397,12 @@ public:
         }
         //std::cerr << "done; memory clean" << std::endl;
         //clear memory
-        delete [] data;
+
         delete [] centers.ptr();
         delete [] sizes.ptr();
+
+        delete [] data;
+
     }
 
     void Serialize(std::ostream &out) const

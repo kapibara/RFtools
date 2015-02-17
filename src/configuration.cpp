@@ -33,6 +33,10 @@ Configuration::Configuration(std::istream &input)
 
     bpt::ptree properties =  subtree.get_child("properties");
     dbFile_ = trim_with_return(properties.get<std::string>("dbfile",""));
+    boost::optional<bpt::ptree &> calib =  properties.get_child_optional("calibration");
+    if (calib){
+        calib_ = Calibration::Deserialize(*calib);
+    }
     testOnly_ = properties.get<int>("testonly",0)!=0;
 
     testOnTrain_ = (properties.get<int>("testontrain",0)!=0) & ~testOnly_;

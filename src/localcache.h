@@ -28,6 +28,7 @@ public:
 
         return *out;
     }
+
     std::ostream &openTextStream(const std::string &name)
     {
         std::ofstream *out = new std::ofstream((base_+name).c_str());

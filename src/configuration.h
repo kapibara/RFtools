@@ -8,6 +8,11 @@
 
 #include <boost/property_tree/ptree.hpp>
 
+#define WITH_OPENCV
+#define WITH_BOOST
+
+#include "calibration.h"
+
 namespace MRF = MicrosoftResearch::Cambridge::Sherwood;
 namespace bpt = boost::property_tree;
 
@@ -68,6 +73,7 @@ public:
     MRF::TrainingParameters forestParameters() const{return forestParam_;}
     DepthFeatureParameters featureParameters() const{return dfParams_;}
     Factory factoryType() const{return factory_;}
+    Calibration calibration() {return calib_;}
 
 private:
 
@@ -107,6 +113,8 @@ private:
 
     DepthFeatureParameters  dfParams_;
     MRF::TrainingParameters forestParam_;
+
+    Calibration calib_;
 };
 
 #endif // CONFIGURATION_H

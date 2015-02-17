@@ -7,9 +7,9 @@
 #include "regression/depthdbreg.h"
 
 #include <math.h>
+#include <assert.h>
 
 //#define ENABLE_OVERFLOW_CHECKS
-
 
 template<class ElemType, int S>
 void setTo(cv::Vec<ElemType,S> &vec, ElemType val)
@@ -141,6 +141,15 @@ public:
         return voteElemCount_;
     }
 
+    element_count RealVotesCount() const
+    {
+        element_count result=0;
+        for(int i=0; i<elems_.size();i++){
+            result+=elems_[i].Count();
+        }
+        return result;
+    }
+
     void Compress(){
         for(int i=0; i<voteElemCount_; i++){
             elems_[i].Compress();
@@ -160,10 +169,10 @@ public:
     {
         stream.read((char *)(&voteElemCount_),sizeof(unsigned char));
         stream.read((char *)(&pointCount_),sizeof(element_count));
-        VotesStatsElemT<ElemType, S> tmp;
+        elems_.resize(voteElemCount_);
+
         for(int i=0; i< voteElemCount_; i++){
-            tmp.Deserialize(stream);
-            elems_.push_back(tmp);
+            elems_[i].Deserialize(stream);
         }
     }
 
@@ -230,12 +239,17 @@ public:
     }
 
 
+    element_count ListSize() const{
+        return votes_.size();
+    }
 
     element_count Count() const{
+        //std::cerr << "votesCount_: " << votesCount_ << "votes_.size()" << votes_.size() << std::endl;
         return votesCount_;
     }
 
     const_iterator begin() const{
+        //std::cerr << "VotesStatsElemT.begin()" << votes_.size() << std::endl;
         return votes_.begin();
     }
 
@@ -318,10 +332,12 @@ public:
         stream.read((char *)(&votesCount_),sizeof(votesCount_));
         //read votes size (dimensions)
         stream.read((char *)(&size),sizeof(size));
+        assert (size==S);
         cv::Vec<ElemType,S> tmp;
 
         //read votes_ array size
         stream.read((char *)(&size),sizeof(size));
+
         for(int i=0; i<size; i++){
             for(int j=0; j<S; j++){
                 stream.read((char *)(&(tmp[j])),sizeof(ElemType));
@@ -330,6 +346,7 @@ public:
         }
 
         RecomputeMM2();
+
     }
 
     void Aggregate(const VotesStatsElemT<ElemType,S>& stats)

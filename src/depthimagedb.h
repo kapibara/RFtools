@@ -114,7 +114,7 @@ class DepthFileBasedImageDBImpl: public DepthFileBasedImageDB
 public:
     DepthFileBasedImageDBImpl(const std::string &base = "",
                               bool constImgSize = false);
-    ~DepthFileBasedImageDBImpl()
+    virtual ~DepthFileBasedImageDBImpl()
     {
         delete cache_;
         delete sub_;

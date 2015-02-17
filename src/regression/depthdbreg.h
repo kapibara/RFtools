@@ -5,6 +5,11 @@
 #include "split.h"
 #include "string2number.hpp"
 
+#define WITH_BOOST
+#define WITH_OPENCV
+
+#include <calibration.h>
+
 template<typename ElemType, unsigned int S>
 class PointsSParser: public GeneralStringParser
 {
@@ -67,12 +72,6 @@ public:
     DepthDBWithVotesSImpl(const std::string &basepath="")
     {
         voteClassCount_ = 0;
-
-        //set default calibration
-        fx_ = 575.81;
-        fy_ = 575.81;
-        cx_ = 320;
-        cy_ = 240;
     }
 
     bool loadDB(const std::string &filename, bool hasHeader)
@@ -92,7 +91,18 @@ public:
         return votes_[i];
     }
 
+    using DepthFileBasedImageDBImpl::getDataPoint;
 
+    bool getDataPoint(index_type i, cv::Vec<ElemType,S> &coord3D){
+        cv::Point2i coord2D;
+        cv::Mat img;
+
+        bool gdpresult = DepthFileBasedImageDBImpl::getDataPoint(i,img,coord2D);
+        unsigned short Ival = img.at<unsigned short>(coord2D);
+        coord3D = to3D(coord2D,Ival);
+
+        return gdpresult;
+    }
 
     bool getDataPointVote(index_type i, std::vector<cv::Vec<ElemType,S> > &vote){
 
@@ -107,7 +117,7 @@ public:
             cv::Vec<ElemType,S> coord;
 
 
-            getDataPoint(i,img,coord2D);
+            DepthFileBasedImageDBImpl::getDataPoint(i,img,coord2D);
 
             if (S==2){
                 coord[0] = coord2D.x;
@@ -135,15 +145,14 @@ public:
 
     }
 
-    cv::Vec<ElemType,S> to3D(const cv::Point2i &in, unsigned short val){
-        return cv::Vec<ElemType,S>((in.x - cx_)/fx_*val,(in.y - cy_)/fy_*val,val);
+    cv::Vec<ElemType,S> to3D(const cv::Point2i &p, unsigned short val){
+        cv::Point2f np;
+        calib_.Proj2Norm(p,np);
+        return cv::Vec<ElemType,S>(np.x*val,np.y*val,val);
     }
 
-    void setCalibParam(double fx,double fy,double cx, double cy){
-        fx_ = fx;
-        fy_ = fy;
-        cx_ = cx;
-        cy_ = cy;
+    void setCalibParam(Calibration calib){
+        calib_ = calib;
     }
 
     typename DepthDBWithVotesS<ElemType,S>::vote_class_count voteClassCount(){
@@ -193,7 +202,7 @@ protected:
     }
 
 private:
-    float fx_,fy_,cx_,cy_;
+    Calibration calib_;
 
     typename DepthDBWithVotesS<ElemType,S>::vote_class_count voteClassCount_;
 
