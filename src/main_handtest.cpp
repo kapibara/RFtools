@@ -91,6 +91,8 @@ int main(int argc, char **argv)
 
     log << "forest deserialized" << std::endl;
 
+    log << "depth: " << forest->GetTree(0).DecisionLevels() << " tree count: " << forest->TreeCount() << std::endl;
+
     log << "testing" << std::endl;
 
     std::vector<std::vector<int> > leafIndicesPerTree;

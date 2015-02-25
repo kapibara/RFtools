@@ -5,14 +5,18 @@ set(FEATUREGEN FeatureGen)
 set(TESTS tests)
 set(EXECCOMB DepthRFComb)
 set(EXECSEQ DepthRFSeq)
-set(EXECHAND HandPoseTT)
-set(EXECHANDTEST HandPoseTest)
+set(EXECHAND HandTrain)
+set(EXECHANDTEST HandTest)
+set(EXECHANDCLTR HandClTrain)
+set(EXECHANDCLTE HandClTest)
 
 set(CL_FOLDER classification)
 set(H_FOLDER hough)
 set(REG_FOLDER regression)
 set(SEQ_FOLDER seq)
 set(HANDPOSE_FOLDER handpose)
+set(PARALLEL_FOLDER parallel)
+set(PERPIXEL_FOLDER perpixelclass)
 
 set(CL_HEADERS ${CL_FOLDER}/depthdb.h /
             ${CL_FOLDER}/classstats.h /
@@ -61,9 +65,15 @@ set(GENERAL_HEADERS /
             calibration.h /
 )
 
+set(PARALLEL_HEADERS /
+    ${PARALLEL_FOLDER}/paralleltreetrainer.h)
+
 set(HANDPOSE_HEADERS 
 
 )
+
+set(PERPIXEL_HEADERS /
+    ${PERPIXEL_FOLDER}/perpixelclassificationdb.h)
 
 set(CL_SOURCE ${CL_FOLDER}/depthdb.cpp /
             ${CL_FOLDER}/classstats.cpp /
@@ -112,9 +122,15 @@ set(SEQ_SOURCE ${SEQ_FOLDER}/forestmerger.cpp
 
 )
 
+set(PARALLEL_SOURCE /
+    ${PARALLEL_FOLDER}/paralleltreetrainer.cpp)
+
 set(HANDPOSE_SOURCE 
 
 )
+
+set(PERPIXEL_SOURCE /
+    ${PERPIXEL_FOLDER}/perpixelclassificationdb.cpp)
 
 #required to see the code in QT creator only...
 set(FOREST ${Forest_DIR}/Forest.h /
@@ -135,8 +151,10 @@ add_executable(${FEATUREGEN} feature_gen.cpp ${GENERAL_SOURCE})
 add_executable(${EXEREG} main_r.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE})
 add_executable(${EXECCOMB} main_comb.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE})
 add_executable(${EXECSEQ} main_seq.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE} ${SEQ_SOURCE} ${SEQ_HEADERS})
-add_executable(${EXECHAND} main_hand.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE} ${HANDPOSE_HEADERS} ${HANDPOSE_SOURCE})
-add_executable(${EXECHANDTEST} main_handtest.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE} ${HANDPOSE_HEADERS} ${HANDPOSE_SOURCE})
+add_executable(${EXECHAND} main_hand.cpp ${GENERAL_HEADERS} ${PARALLEL_HEADERS} ${PARALLEL_SOURCE} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE} ${HANDPOSE_HEADERS} ${HANDPOSE_SOURCE})
+add_executable(${EXECHANDTEST} main_handtest.cpp ${GENERAL_HEADERS} ${GENERAL_SOURCE} ${REG_HEADERS} ${REG_SOURCE} ${HANDPOSE_HEADERS} ${HANDPOSE_SOURCE} ${PERPIXEL_HEADERS} ${PERPIXEL_SOURCE})
+add_executable(${EXECHANDCLTR} main_handcl.cpp  ${GENERAL_HEADERS} ${PARALLEL_HEADERS} ${PARALLEL_SOURCE} ${GENERAL_SOURCE} ${CL_SOURCE} ${CL_HEADERS} ${PERPIXEL_HEADERS} ${PERPIXEL_SOURCE})
+add_executable(${EXECHANDCLTE} main_handtestcl.cpp  ${GENERAL_HEADERS} ${PARALLEL_HEADERS} ${PARALLEL_SOURCE} ${GENERAL_SOURCE} ${CL_SOURCE} ${CL_HEADERS} ${PERPIXEL_HEADERS} ${PERPIXEL_SOURCE})
 
 
 target_link_libraries(${EXECCL} ${OpenCV_LIBS} ${Boost_LIBS})
@@ -148,6 +166,8 @@ target_link_libraries(${EXECCOMB} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS}
 target_link_libraries(${EXECSEQ} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
 target_link_libraries(${EXECHAND} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
 target_link_libraries(${EXECHANDTEST} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
+target_link_libraries(${EXECHANDCLTR} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
+target_link_libraries(${EXECHANDCLTE} ${OpenCV_LIBS} ${Boost_LIBS} ${MEANSHIFT_LIBS})
 
 #install(TARGETS ${EXECCL} DESTINATION .)
 install(TARGETS ${EXECH} DESTINATION . OPTIONAL)
@@ -158,3 +178,5 @@ install(TARGETS ${EXECCOMB} DESTINATION . OPTIONAL)
 install(TARGETS ${EXECSEQ} DESTINATION . OPTIONAL)
 install(TARGETS ${EXECHAND} DESTINATION . OPTIONAL)
 install(TARGETS ${EXECHANDTEST} DESTINATION . OPTIONAL)
+install(TARGETS ${EXECHANDCLTR} DESTINATION . OPTIONAL)
+install(TARGETS ${EXECHANDCLTE} DESTINATION . OPTIONAL)

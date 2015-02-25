@@ -106,6 +106,7 @@ public:
         for(typename VotesStatsT<ElemType,S>::const_iterator i = stats.begin(); i != stats.end(); i++){
             if(i->Count()>0){
                 elems_[ind].AggregateVotes(*i,mshift);
+
                 mshift.Clean();
                 ind++;
             }
@@ -118,6 +119,33 @@ public:
              elems_[i].FilterSmallWeights(weightThr);
          }
      }
+
+     void FilterSmallVotes(float voteThr)
+     {
+         long int ecount = 0;
+         for(int i=0; i< elems_.size(); i++){
+            ecount += elems_[i].OriCount();
+         }
+         for(int i=0; i< elems_.size(); i++){
+             if((double)elems_[i].OriCount()/ecount<voteThr){
+                 elems_[i].Clear();
+             }
+         }
+     }
+
+
+     void RescaleVoteWeights()
+     {
+         long int ecount = 0;
+         for(int i=0; i< elems_.size(); i++){
+            ecount += elems_[i].OriCount();
+         }
+
+         for(int i=0; i< elems_.size(); i++){
+             elems_[i].RescaleWeights(((double)elems_[i].OriCount()/(double)ecount));
+         }
+     }
+
 
     void AddVotes(const VotesAggregator<ElemType,S> &agg)
     {
@@ -460,6 +488,19 @@ public:
         votes_ = newvotes;
     }
 
+    void RescaleWeights(float scale)
+    {
+        for(int i=0; i< weights_.size(); i++){
+            weights_[i] *= scale;
+        }
+    }
+
+    void Clear()
+    {
+        votes_.clear();
+        weights_.clear();
+    }
+
 private:
 
     void convert(const cv::Vec<ElemType,S> &from, mean_shift::MatrixRow &to)
@@ -470,7 +511,7 @@ private:
         }
     }
 
-    int oriVoteCount_;
+    typename VotesStatsElemT<ElemType,S>::element_count oriVoteCount_;
     std::vector<double> weights_;
     std::vector<cv::Vec<ElemType,S> > votes_;
     std::vector<mean_shift::ElemType> prediction_;

@@ -141,7 +141,7 @@ public:
         return voteElemCount_;
     }
 
-    element_count RealVotesCount() const
+    element_count VoteCount() const
     {
         element_count result=0;
         for(int i=0; i<elems_.size();i++){

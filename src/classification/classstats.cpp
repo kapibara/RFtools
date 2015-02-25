@@ -134,10 +134,12 @@ void ClassStats::Aggregate(const MicrosoftResearch::Cambridge::Sherwood::IDataPo
 
 void ClassStats::Aggregate(bintype i)
 {
+
 #ifdef ENABLE_BOUNDARY_CHECKS
     if(i>=binCount_){
         std::cerr << "ClassStats::Aggregate(bintype i): i>=binCount_" << std::endl;
         std::cerr.flush();
+
     }
 #endif
 
@@ -188,7 +190,7 @@ void ClassStats::Aggregate(const ClassStats& aggregator)
 
     if(aggregator.binCount_ != binCount_){
         std::cerr << "binCount_ does not correspond" <<std::endl;
-        std::cerr << "binCount_:" << (int)binCount_ << "aggregator.binCount_:" << (int)aggregator.binCount_ <<std::endl;
+        std::cerr << "binCount_:" << (int)binCount_ << " aggregator.binCount_:" << (int)aggregator.binCount_ <<std::endl;
     }
 
 
@@ -198,8 +200,8 @@ void ClassStats::Aggregate(const ClassStats& aggregator)
     }
 
 #ifdef ENABLE_OVERFLOW_CHECKS
-    if (sampleCount_>sampleCount_-aggregator.sampleCount_){
-        std::cerr << "ClassStats::Aggregate(const ClassStats& aggregator):stats overflow" << std::endl;
+    if (sampleCount_> std::numeric_limits<bintype>::max()-aggregator.sampleCount_){
+        std::cerr << "ClassStats::Aggregate(const ClassStats& aggregator):stats overflow: " << sampleCount_ << ";" << std::numeric_limits<bintype>::max()-aggregator.sampleCount_ << std::endl;
         std::cerr.flush();
     }
 #endif

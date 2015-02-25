@@ -242,11 +242,12 @@ private:
                 if(varThr_< 0 ||
                     tree.GetNode(i).TrainingDataStatistics.VoteVariance() < varThr_){
                     if (sizeThr_ <0 ||
-                        tree.GetNode(i).TrainingDataStatistics.RealVotesCount() < sizeThr_){
+                            tree.GetNode(i).TrainingDataStatistics.VoteCount() < sizeThr_){
                         leafcount++;
                         //std::cerr << "AggregateVotes()" << std::endl;
                         aggLeafs[i].AggregateVotes(tree.GetNode(i).TrainingDataStatistics,mshift);
                         //std::cerr << "FilterSmallWeights()" << std::endl;
+                        aggLeafs[i].RescaleVoteWeights();
                         aggLeafs[i].FilterSmallWeights(wThr_);
                     }else{
                         std::cerr << "threshold the size: node " << i << std::endl;

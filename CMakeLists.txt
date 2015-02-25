@@ -27,8 +27,14 @@ endif()
 
 find_package(Boost REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(OpenMP)
 if(WIN32)
     find_package(STXXL REQUIRED)
+endif()
+
+if(OPENMP_FOUND)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
 set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY true)

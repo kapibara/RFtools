@@ -1,32 +1,29 @@
+
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
 #include <time.h>
 
-
-#include "regression/depthdbreg.h"
-#include "regression/regtrainingcontext.h"
-#include "configuration.h"
-#include "copyfile.h"
-#include "Tree.h"
-#include "Random.h"
+#include "ProgressStream.h"
 #include "Forest.h"
-#include "ForestTrainer.h"
-#include "depthfeature.h"
+#include "TrainingParameters.h"
+
+#include "perpixelclass/perpixelclassificationdb.h"
+#include "classification/cltrainingcontext.h"
+#include "classification/classstats.h"
 #include "parallel/paralleltreetrainer.h"
+#include "depthfeature.h"
+#include "featureaccomulator.h"
+#include "configuration.h"
+#include "localcache.h"
+#include "copyfile.h"
 
-#include <omp.h>
 
-#define VoteDim 3
-typedef float VoteType;
-
-typedef VotesStatsT<VoteType,VoteDim> Stats;
-typedef RegTrainingContext<Stats,FullDepthFeatureFactory> Context;
+using namespace MicrosoftResearch::Cambridge::Sherwood;
 
 int main(int argc, char **argv)
 {
-
 
     std::cout << "config: " << argv[1] << std::endl;
     std::cout << "reading config data" << std::endl;
@@ -47,28 +44,25 @@ int main(int argc, char **argv)
     copyfile(argv[1],cache.base() + "config.xml");
     Random random;
 
-    DepthDBWithVotesSImpl<VoteType, VoteDim> db;
+    PerPixelClassificationDB db;
 
     if (config.useSubsampler()){
         log << "using subsampler - rate: " << config.subsamplerRate() << std::endl;
         db.setSubsampler(new RandomSubsampler(config.subsamplerRate(),random));
     }
 
-    db.setCalibParam(config.calibration());
-    log << "calibration paramerers: " << config.calibration() << std::endl;
-    log << "loading db" << std::endl;
-    db.loadDB(config.databaseFile(),config.databaseHasHeader());
+
+    db.loadDB(config.databaseFile());
 
     ProgressStream progress(log,Verbose);
 
     log << "loading from: " << config.databaseFile() << std::endl;
     log << "number of images: " << db.imageCount() << std::endl;
     log << "number of points: " << db.Count() << std::endl;
-    log << "number of vote classes: " << (int)db.voteClassCount() << std::endl;
+    log << "number of vote classes: " << (int)db.classCount() << std::endl;
     log << "discard high variance: " << config.discardHighVar() << " with thr: " << config.nodeVarThr() << std::endl;
 
     log << "train a forest" << std::endl;
-        //some work here
     DepthFeatureParameters featureParams = config.featureParameters();
     log << featureParams;
 
@@ -79,19 +73,16 @@ int main(int argc, char **argv)
         << "features sampled: " << trainingParameters.NumberOfCandidateFeatures << std::endl
         << "threashold per feature: " << trainingParameters.NumberOfCandidateThresholdsPerFeature << std::endl;
 
-    FeatureAccomulator *accomulator = 0;
-    TrainingParameters tp = config.forestParameters();
 
     FullDepthFeatureFactory *fff = new FullDepthFeatureFactory(config.featureParameters());
-    Context *context = new Context(db.voteClassCount(),*fff,config.gainType(),config.voteDistThr()*config.voteDistThr());
-    context->setFeatureAccomulator(accomulator);
+    ClTrainingContext *context = new ClTrainingContext(db.classCount(),*fff);
 
     time_t start,end;
-    std::auto_ptr<Forest<DepthFeature, Stats> > forest;
+    std::auto_ptr<Forest<DepthFeature, ClassStats> > forest;
 
     time(&start);
 
-    forest = TreeBasedParallelTrainer<DepthFeature, Stats>::TrainForest (random, trainingParameters, *context, db,&progress);
+    forest = TreeBasedParallelTrainer<DepthFeature, ClassStats>::TrainForest (random, trainingParameters, *context, db,&progress);
 
     time(&end);
     double dif = difftime (end,start);
@@ -105,6 +96,5 @@ int main(int argc, char **argv)
     log << "forest serialized" << std::endl;
 
     return 0;
+
 }
-
-

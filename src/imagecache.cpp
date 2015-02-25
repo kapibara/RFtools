@@ -7,6 +7,10 @@ void InMemoryCache::addToCache(const std::string &file)
 {
     cv::Mat image = cv::imread(file,-1);
 
+    if(image.size().width == 0 || image.size().height == 0){
+        std::cerr << "could not load: "<< file << std::endl;
+    }
+
     mat_.push_back(image);
 
     filenames_.push_back(file);
